@@ -31,6 +31,7 @@ const OceanCleanupGame = () => {
   const [trash, setTrash] = useState<TrashItem[]>([]);
   const [combo, setCombo] = useState(0);
   const [showCombo, setShowCombo] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false); // ADD - track if game has ever started
 
   const trashTypes = {
     bottle: { points: 10, color: 'bg-blue-400', emoji: '🍶' },
@@ -49,8 +50,8 @@ const OceanCleanupGame = () => {
       const type = types[Math.floor(Math.random() * types.length)];
       
       newTrash.push({
-        id: `trash-${i}`,
-        x: Math.random() * 80 + 10, // Keep within bounds
+        id: `trash-${Date.now()}-${i}`, // CHANGED - unique IDs each time
+        x: Math.random() * 80 + 10,
         y: Math.random() * 70 + 15,
         type,
         points: trashTypes[type].points,
@@ -64,6 +65,7 @@ const OceanCleanupGame = () => {
 
   const startGame = () => {
     setGameActive(true);
+    setGameStarted(true); // ADD
     setScore(0);
     setTimeLeft(90);
     setCombo(0);
@@ -75,7 +77,6 @@ const OceanCleanupGame = () => {
 
     const trashItem = trash.find(item => item.id === trashId);
     if (trashItem && !trashItem.collected) {
-      // Update trash state
       setTrash(prev => prev.map(item => 
         item.id === trashId ? { ...item, collected: true } : item
       ));
@@ -87,7 +88,6 @@ const OceanCleanupGame = () => {
       
       setTimeout(() => setShowCombo(false), 1000);
       
-      // Dispatch points to global state
       dispatch({ type: 'ADD_POINTS', payload: Math.round(points) });
     }
   };
@@ -99,7 +99,6 @@ const OceanCleanupGame = () => {
     const totalTrash = trash.length;
     const isPerfectCleanup = collectedCount === totalTrash;
     
-    // Update ocean cleanup stats
     dispatch({
       type: 'UPDATE_OCEAN_STATS',
       payload: {
@@ -111,7 +110,6 @@ const OceanCleanupGame = () => {
       }
     });
 
-    // Check for level completion
     if (collectedCount >= totalTrash * 0.8) {
       setLevel(prev => prev + 1);
     }
@@ -139,7 +137,6 @@ const OceanCleanupGame = () => {
       setTimeout(() => setShowCombo(false), 2000);
     }
     
-    // Reset combo after inactivity
     const comboTimer = setTimeout(() => {
       if (combo > 0) {
         setCombo(0);
@@ -148,11 +145,6 @@ const OceanCleanupGame = () => {
     
     return () => clearTimeout(comboTimer);
   }, [combo]);
-
-  // Initialize trash when component mounts
-  useEffect(() => {
-    generateTrash();
-  }, [generateTrash]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -184,7 +176,7 @@ const OceanCleanupGame = () => {
           { icon: Target, label: 'Level', value: level.toString(), color: 'text-green-400' },
           { icon: Star, label: 'Combo', value: `x${combo}`, color: 'text-purple-400' },
           { icon: Zap, label: 'Collected', value: `${trash.filter(t => t.collected).length}/${trash.length}`, color: 'text-orange-400' }
-        ].map((stat, index) => {
+        ].map((stat) => {
           const Icon = stat.icon;
           return (
             <motion.div
@@ -202,7 +194,7 @@ const OceanCleanupGame = () => {
 
       {/* Game Area */}
       <div className="relative">
-        {/* Game Controls */}
+        {/* Game Controls - CHANGED CONDITION */}
         {!gameActive && (
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -211,9 +203,9 @@ const OceanCleanupGame = () => {
           >
             <div className="text-center">
               <h2 className="text-3xl font-bold text-white mb-4">
-                {score > 0 ? 'Game Complete!' : 'Ready to Clean the Ocean?'}
+                {gameStarted ? 'Game Complete!' : 'Ready to Clean the Ocean?'}
               </h2>
-              {score > 0 && (
+              {gameStarted && (
                 <div className="mb-6 p-6 bg-white/10 rounded-xl backdrop-blur-lg">
                   <p className="text-xl text-white mb-2">Final Score: <span className="font-bold text-yellow-400">{score.toLocaleString()}</span></p>
                   <p className="text-lg text-blue-100">Trash Collected: {trash.filter(t => t.collected).length}/{trash.length}</p>
@@ -229,7 +221,7 @@ const OceanCleanupGame = () => {
                 className="bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-4 px-8 rounded-xl text-xl hover:from-green-600 hover:to-blue-600 transition-all"
               >
                 <Play className="h-6 w-6 inline mr-2" />
-                {score > 0 ? 'Play Again' : 'Start Game'}
+                {gameStarted ? 'Play Again' : 'Start Game'}
               </motion.button>
             </div>
           </motion.div>
@@ -309,7 +301,7 @@ const OceanCleanupGame = () => {
             })}
           </AnimatePresence>
 
-          {/* Floating Particles */}
+          {/* Floating Particles (Bubbles/Fish) */}
           {[...Array(20)].map((_, i) => (
             <motion.div
               key={i}
@@ -329,6 +321,28 @@ const OceanCleanupGame = () => {
                 top: `${80 + Math.random() * 20}%`
               }}
             />
+          ))}
+
+          {/* Fish Swimming */}
+          {gameActive && [...Array(5)].map((_, i) => (
+            <motion.div
+              key={`fish-${i}`}
+              className="absolute text-3xl"
+              animate={{
+                x: ['0%', '100%'],
+                y: [`${20 + i * 15}%`, `${25 + i * 15}%`, `${20 + i * 15}%`]
+              }}
+              transition={{
+                x: { duration: 10 + i * 2, repeat: Infinity, ease: "linear" },
+                y: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+              }}
+              style={{
+                left: '-50px',
+                top: `${20 + i * 15}%`
+              }}
+            >
+              🐠
+            </motion.div>
           ))}
         </motion.div>
       </div>

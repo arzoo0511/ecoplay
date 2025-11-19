@@ -3,15 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MessageCircle, 
   ThumbsUp, 
-  ThumbsDown, 
   Reply, 
   Share2, 
   Plus,
   Search,
-  Filter,
   Award,
-  Clock,
-  User
+  Clock
 } from 'lucide-react';
 
 interface Post {
@@ -48,7 +45,8 @@ const Community = () => {
     { id: 'discussion', name: 'Discussion', emoji: '💬' }
   ];
 
-  const posts: Post[] = [
+  // Initialize posts as state so actions can update them
+  const [posts, setPosts] = useState<Post[]>([
     {
       id: '1',
       author: 'EcoEnthusiast',
@@ -119,7 +117,50 @@ const Community = () => {
       isSolved: false,
       tags: ['activism', 'community', 'climate-action']
     }
-  ];
+  ]);
+
+  // Reply modal state
+  const [replyModal, setReplyModal] = useState<{ open: boolean; postId?: string }>({ open: false });
+  const [replyText, setReplyText] = useState('');
+
+  // Like handler
+  const handleLike = (id: string) => {
+    setPosts(prev =>
+      prev.map(p =>
+        p.id === id ? { ...p, isLiked: !p.isLiked, likes: p.isLiked ? p.likes - 1 : p.likes + 1 } : p
+      )
+    );
+  };
+
+  // Share handler
+  const handleShare = async (id: string) => {
+    const post = posts.find(p => p.id === id);
+    if (!post) return;
+    const url = `${window.location.origin}/community/${id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: post.title, text: 'Check this out on Eco Community', url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        alert('Post link copied to clipboard');
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  // Open reply
+  const openReply = (id: string) => setReplyModal({ open: true, postId: id });
+
+  const submitReply = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyModal.postId || !replyText.trim()) return;
+    setPosts(prev =>
+      prev.map(p => (p.id === replyModal.postId ? { ...p, replies: p.replies + 1 } : p))
+    );
+    setReplyText('');
+    setReplyModal({ open: false });
+  };
 
   const filteredPosts = posts.filter(post => {
     const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory;
@@ -141,8 +182,27 @@ const Community = () => {
 
   const handleSubmitPost = (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send the post to your backend
-    console.log('New post:', newPost);
+    const id = Date.now().toString();
+    setPosts(prev => [
+      {
+        id,
+        author: 'You',
+        avatar: '👤',
+        title: newPost.title,
+        content: newPost.content,
+        category: newPost.category,
+        timestamp: 'Just now',
+        likes: 0,
+        replies: 0,
+        isLiked: false,
+        isSolved: false,
+        tags: newPost.tags
+          .split(',')
+          .map(t => t.trim())
+          .filter(Boolean)
+      },
+      ...prev
+    ]);
     setShowNewPost(false);
     setNewPost({ title: '', content: '', category: 'question', tags: '' });
   };
@@ -281,6 +341,7 @@ const Community = () => {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
+                  onClick={() => handleLike(post.id)}
                   className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all ${
                     post.isLiked 
                       ? 'bg-green-500/20 text-green-400' 
@@ -294,6 +355,7 @@ const Community = () => {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
+                  onClick={() => openReply(post.id)}
                   className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-white/10 text-blue-100 hover:bg-white/20 transition-all"
                 >
                   <MessageCircle className="h-4 w-4" />
@@ -303,6 +365,7 @@ const Community = () => {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
+                  onClick={() => handleShare(post.id)}
                   className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-white/10 text-blue-100 hover:bg-white/20 transition-all"
                 >
                   <Share2 className="h-4 w-4" />
@@ -313,6 +376,7 @@ const Community = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => openReply(post.id)}
                 className="bg-gradient-to-r from-blue-500 to-green-500 text-white font-bold py-2 px-4 rounded-lg hover:from-blue-600 hover:to-green-600 transition-all"
               >
                 <Reply className="h-4 w-4 inline mr-2" />
@@ -411,6 +475,45 @@ const Community = () => {
                     onClick={() => setShowNewPost(false)}
                     className="bg-white/10 text-white font-bold py-3 px-6 rounded-xl hover:bg-white/20 transition-all"
                   >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Reply Modal */}
+      <AnimatePresence>
+        {replyModal.open && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={() => setReplyModal({ open: false })}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 10 }}
+              className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 max-w-lg w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-white">Add a reply</h3>
+                <button className="text-white text-2xl" onClick={() => setReplyModal({ open: false })}>×</button>
+              </div>
+              <form onSubmit={submitReply} className="space-y-4">
+                <textarea
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-300 focus:outline-none focus:border-blue-400 h-28 resize-none"
+                  placeholder="Write your reply..."
+                  required
+                />
+                <div className="flex gap-3">
+                  <button type="submit" className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-3 px-6 rounded-xl hover:from-green-600 hover:to-blue-600 transition-all">
+                    Post Reply
+                  </button>
+                  <button type="button" onClick={() => setReplyModal({ open: false })} className="bg-white/10 text-white font-bold py-3 px-6 rounded-xl hover:bg-white/20 transition-all">
                     Cancel
                   </button>
                 </div>
