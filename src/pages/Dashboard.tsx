@@ -15,16 +15,16 @@ import {
   ArrowDown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
   const { state, dispatch } = useGame();
   const { user, ecoVillage, dailyChallenges, gameStats } = state;
   const navigate = useNavigate();
+  const { user: authUser, logout } = useAuth();
 
   const [challenges, setChallenges] = React.useState(dailyChallenges);
   React.useEffect(() => setChallenges(dailyChallenges), [dailyChallenges]);
-
-  // Animated counter hook
   const useCounter = (end: number, duration: number = 2000) => {
     const [count, setCount] = useState(0);
     useEffect(() => {
@@ -48,11 +48,9 @@ const Dashboard = () => {
     return count;
   };
 
-  // Calculate realistic stats
   const totalPoints = user.points;
   const animatedPoints = useCounter(totalPoints);
   
-  // Eco score based on actual progress (0-100)
   const calculateEcoScore = () => {
     const villageScore = (ecoVillage.airQuality + ecoVillage.waterQuality + ecoVillage.biodiversity) / 3;
     const activityScore = Math.min(100, (gameStats.totalTrashCollected / 10) + (ecoVillage.trees / 2));
@@ -69,12 +67,12 @@ const Dashboard = () => {
 
   const routeFor = (text: string) => {
     const t = text.toLowerCase();
-    if (t.includes('cleanup') || t.includes('ocean')) return '/ocean-cleanup';
-    if (t.includes('water') || t.includes('tree') || t.includes('eco')) return '/eco-village';
-    if (t.includes('learn') || t.includes('course') || t.includes('video')) return '/learn';
-    if (t.includes('event')) return '/events';
-    if (t.includes('community')) return '/community';
-    return '/eco-village';
+    if (t.includes('cleanup') || t.includes('ocean')) return '/OceanCleanupGame';
+    if (t.includes('water') || t.includes('tree') || t.includes('eco')) return '/EcoVillage';
+    if (t.includes('learn') || t.includes('course') || t.includes('video')) return '/Learn';
+    if (t.includes('event')) return '/Events';
+    if (t.includes('community')) return '/Community';
+    return '/EcoVillage';
   };
 
   const startChallenge = (title: string) => navigate(routeFor(title));
@@ -162,7 +160,7 @@ const Dashboard = () => {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="min-h-screen p-4 sm:p-6 lg:p-8"
+      className="min-h-screen pb-10 relative z-10"
     >
       {/* Welcome Section */}
       <motion.div
@@ -170,7 +168,7 @@ const Dashboard = () => {
         className="mb-8 text-center"
       >
         <h1 className="text-4xl lg:text-6xl font-bold text-white mb-4">
-          Welcome back, <span className="text-green-400">{user.name}!</span>
+          Welcome back, <span className="text-green-400">{authUser?.name || 'Player'}!</span>
         </h1>
         <p className="text-xl text-blue-100 max-w-2xl mx-auto">
           Your environmental impact grows stronger every day. Continue your mission to save our planet!

@@ -26,7 +26,7 @@ const AnimatedBackground = () => {
     }> = [];
 
     // Create bubbles
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 18; i++) {
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
@@ -38,7 +38,7 @@ const AnimatedBackground = () => {
     }
 
     // Create fish
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 5; i++) {
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
@@ -140,7 +140,7 @@ const AnimatedBackground = () => {
   return (
     <div className="fixed inset-0 z-0">
       {/* Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-blue-400 via-blue-600 to-blue-900" />
+      <div className="absolute inset-0 bg-gradient-to-b from-blue-400 via-blue-600 to-blue-900 opacity-70" />
       
       {/* Animated Canvas */}
       <canvas

@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { 
   Play, 
-  Pause, 
-  RotateCcw, 
   Trophy, 
   Zap,
   Target,
@@ -19,19 +17,30 @@ interface TrashItem {
   type: 'bottle' | 'can' | 'bag' | 'tire' | 'oil';
   points: number;
   size: number;
-  collected: boolean;
+}
+
+interface Fish {
+  id: string;
+  x: number;
+  y: number;
+  speed: number;
+  direction: number;
 }
 
 const OceanCleanupGame = () => {
   const { state, dispatch } = useGame();
   const [gameActive, setGameActive] = useState(false);
   const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(90);
+  const [timeLeft, setTimeLeft] = useState(30); // CHANGED: 30 seconds
   const [level, setLevel] = useState(1);
   const [trash, setTrash] = useState<TrashItem[]>([]);
+  const [fish, setFish] = useState<Fish[]>([]);
   const [combo, setCombo] = useState(0);
   const [showCombo, setShowCombo] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false); // ADD - track if game has ever started
+  const [gameStarted, setGameStarted] = useState(false);
+  const [totalCollected, setTotalCollected] = useState(0);
+  const gameAreaRef = useRef<HTMLDivElement>(null);
+  const mousePos = useRef({ x: 0, y: 0 });
 
   const trashTypes = {
     bottle: { points: 10, color: 'bg-blue-400', emoji: '🍶' },
@@ -41,49 +50,77 @@ const OceanCleanupGame = () => {
     oil: { points: 100, color: 'bg-yellow-600', emoji: '🛢️' }
   };
 
-  const generateTrash = useCallback(() => {
+  // Generate single trash item
+  const generateSingleTrash = useCallback(() => {
+    const types = Object.keys(trashTypes) as (keyof typeof trashTypes)[];
+    const type = types[Math.floor(Math.random() * types.length)];
+    
+    return {
+      id: `trash-${Date.now()}-${Math.random()}`,
+      x: Math.random() * 80 + 10,
+      y: Math.random() * 70 + 15,
+      type,
+      points: trashTypes[type].points,
+      size: type === 'tire' ? 40 : type === 'oil' ? 35 : 25,
+    };
+  }, []);
+
+  // Generate initial trash
+  const generateInitialTrash = useCallback(() => {
     const newTrash: TrashItem[] = [];
-    const trashCount = 15 + (level * 5);
+    const trashCount = 10 + (level * 3); // More trash per level
     
     for (let i = 0; i < trashCount; i++) {
-      const types = Object.keys(trashTypes) as (keyof typeof trashTypes)[];
-      const type = types[Math.floor(Math.random() * types.length)];
-      
-      newTrash.push({
-        id: `trash-${Date.now()}-${i}`, // CHANGED - unique IDs each time
-        x: Math.random() * 80 + 10,
-        y: Math.random() * 70 + 15,
-        type,
-        points: trashTypes[type].points,
-        size: type === 'tire' ? 40 : type === 'oil' ? 35 : 25,
-        collected: false
-      });
+      newTrash.push(generateSingleTrash());
     }
     
     setTrash(newTrash);
+  }, [level, generateSingleTrash]);
+
+  // Generate fish obstacles
+  const generateFish = useCallback(() => {
+    const newFish: Fish[] = [];
+    const fishCount = 3 + Math.floor(level / 2); // More fish at higher levels
+    
+    for (let i = 0; i < fishCount; i++) {
+      newFish.push({
+        id: `fish-${i}`,
+        x: Math.random() * 100,
+        y: 20 + Math.random() * 60,
+        speed: 1 + Math.random() * 2,
+        direction: Math.random() > 0.5 ? 1 : -1
+      });
+    }
+    
+    setFish(newFish);
   }, [level]);
 
   const startGame = () => {
     setGameActive(true);
-    setGameStarted(true); // ADD
+    setGameStarted(true);
     setScore(0);
-    setTimeLeft(90);
+    setTimeLeft(30); // CHANGED: 30 seconds
     setCombo(0);
-    generateTrash();
+    setTotalCollected(0);
+    generateInitialTrash();
+    generateFish();
   };
 
   const collectTrash = (trashId: string) => {
     if (!gameActive) return;
 
     const trashItem = trash.find(item => item.id === trashId);
-    if (trashItem && !trashItem.collected) {
-      setTrash(prev => prev.map(item => 
-        item.id === trashId ? { ...item, collected: true } : item
-      ));
+    if (trashItem) {
+      // Remove collected trash
+      setTrash(prev => prev.filter(item => item.id !== trashId));
+      
+      // Add new trash to replace it
+      setTrash(prev => [...prev, generateSingleTrash()]);
 
       const points = trashItem.points * (1 + combo * 0.1);
       setScore(prev => prev + Math.round(points));
       setCombo(prev => prev + 1);
+      setTotalCollected(prev => prev + 1);
       setShowCombo(true);
       
       setTimeout(() => setShowCombo(false), 1000);
@@ -92,28 +129,83 @@ const OceanCleanupGame = () => {
     }
   };
 
+  const handleFishCollision = useCallback(() => {
+    if (!gameActive) return;
+    
+    setScore(prev => Math.max(0, prev - 5));
+    setCombo(0);
+    
+    // Visual feedback
+    const gameArea = gameAreaRef.current;
+    if (gameArea) {
+      gameArea.style.border = '3px solid red';
+      setTimeout(() => {
+        gameArea.style.border = '';
+      }, 200);
+    }
+  }, [gameActive]);
+
+  // Track mouse position
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!gameAreaRef.current) return;
+    
+    const rect = gameAreaRef.current.getBoundingClientRect();
+    mousePos.current = {
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100
+    };
+  };
+
+  // Fish movement and collision detection
+  useEffect(() => {
+    if (!gameActive) return;
+
+    const fishInterval = setInterval(() => {
+      setFish(prev => prev.map(f => {
+        let newX = f.x + (f.speed * f.direction * 0.5);
+        let newDirection = f.direction;
+        
+        // Bounce off edges
+        if (newX > 95 || newX < 5) {
+          newDirection = -f.direction;
+          newX = f.x + (f.speed * newDirection * 0.5);
+        }
+
+        // Check collision with cursor
+        const dx = Math.abs(mousePos.current.x - newX);
+        const dy = Math.abs(mousePos.current.y - f.y);
+        
+        if (dx < 5 && dy < 5) {
+          handleFishCollision();
+        }
+
+        return {
+          ...f,
+          x: newX,
+          direction: newDirection
+        };
+      }));
+    }, 50);
+
+    return () => clearInterval(fishInterval);
+  }, [gameActive, handleFishCollision]);
+
   const endGame = useCallback(() => {
     setGameActive(false);
-    
-    const collectedCount = trash.filter(item => item.collected).length;
-    const totalTrash = trash.length;
-    const isPerfectCleanup = collectedCount === totalTrash;
     
     dispatch({
       type: 'UPDATE_OCEAN_STATS',
       payload: {
-        oceanCleanupScore: state.gameStats.oceanCleanupScore + score,
-        totalTrashCollected: state.gameStats.totalTrashCollected + collectedCount,
-        perfectCleanups: isPerfectCleanup 
-          ? state.gameStats.perfectCleanups + 1 
-          : state.gameStats.perfectCleanups
+        oceanCleanupScore: (state.gameStats?.oceanCleanupScore || 0) + score,
+        totalTrashCollected: (state.gameStats?.totalTrashCollected || 0) + totalCollected,
+        perfectCleanups: state.gameStats?.perfectCleanups || 0
       }
     });
 
-    if (collectedCount >= totalTrash * 0.8) {
+    if (score > 500) {
       setLevel(prev => prev + 1);
     }
-  }, [dispatch, score, trash, state.gameStats]);
+  }, [dispatch, score, totalCollected, state.gameStats]);
 
   useEffect(() => {
     if (!gameActive) return;
@@ -147,9 +239,7 @@ const OceanCleanupGame = () => {
   }, [combo]);
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `0:${seconds.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -158,24 +248,22 @@ const OceanCleanupGame = () => {
       animate={{ opacity: 1 }}
       className="min-h-screen p-4 sm:p-6 lg:p-8"
     >
-      {/* Header */}
       <div className="mb-6 text-center">
         <h1 className="text-4xl lg:text-6xl font-bold text-white mb-4">
           🌊 Ocean Cleanup Challenge
         </h1>
         <p className="text-xl text-blue-100">
-          Clean the ocean and save marine life! Collect trash to earn points and level up.
+          Clean the ocean! Avoid the fish and collect trash. New trash spawns continuously!
         </p>
       </div>
 
-      {/* Game Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {[
           { icon: Trophy, label: 'Score', value: score.toLocaleString(), color: 'text-yellow-400' },
           { icon: Clock, label: 'Time', value: formatTime(timeLeft), color: 'text-blue-400' },
           { icon: Target, label: 'Level', value: level.toString(), color: 'text-green-400' },
           { icon: Star, label: 'Combo', value: `x${combo}`, color: 'text-purple-400' },
-          { icon: Zap, label: 'Collected', value: `${trash.filter(t => t.collected).length}/${trash.length}`, color: 'text-orange-400' }
+          { icon: Zap, label: 'Collected', value: totalCollected.toString(), color: 'text-orange-400' }
         ].map((stat) => {
           const Icon = stat.icon;
           return (
@@ -192,9 +280,7 @@ const OceanCleanupGame = () => {
         })}
       </div>
 
-      {/* Game Area */}
       <div className="relative">
-        {/* Game Controls - CHANGED CONDITION */}
         {!gameActive && (
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -208,10 +294,7 @@ const OceanCleanupGame = () => {
               {gameStarted && (
                 <div className="mb-6 p-6 bg-white/10 rounded-xl backdrop-blur-lg">
                   <p className="text-xl text-white mb-2">Final Score: <span className="font-bold text-yellow-400">{score.toLocaleString()}</span></p>
-                  <p className="text-lg text-blue-100">Trash Collected: {trash.filter(t => t.collected).length}/{trash.length}</p>
-                  {trash.every(t => t.collected) && (
-                    <p className="text-green-400 font-bold mt-2">🎉 Perfect Cleanup! Bonus Points!</p>
-                  )}
+                  <p className="text-lg text-blue-100">Trash Collected: {totalCollected}</p>
                 </div>
               )}
               <motion.button
@@ -227,7 +310,6 @@ const OceanCleanupGame = () => {
           </motion.div>
         )}
 
-        {/* Combo Display */}
         <AnimatePresence>
           {showCombo && combo >= 5 && (
             <motion.div
@@ -243,18 +325,32 @@ const OceanCleanupGame = () => {
           )}
         </AnimatePresence>
 
-        {/* Ocean Game Area */}
         <motion.div
-          className="bg-gradient-to-b from-blue-400/30 to-blue-900/50 backdrop-blur-lg rounded-2xl border border-blue-300/30 min-h-[600px] relative overflow-hidden"
+          ref={gameAreaRef}
+          onMouseMove={handleMouseMove}
+          className="bg-gradient-to-b from-blue-400/30 to-blue-900/50 backdrop-blur-lg rounded-2xl border-2 border-blue-300/30 min-h-[600px] relative overflow-hidden transition-all"
           style={{
             backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(120, 200, 255, 0.3) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)'
           }}
         >
-          {/* Floating Trash */}
+          {/* Fish Obstacles */}
+          {gameActive && fish.map((f) => (
+            <motion.div
+              key={f.id}
+              className="absolute text-4xl pointer-events-none z-10"
+              style={{
+                left: `${f.x}%`,
+                top: `${f.y}%`,
+                transform: f.direction > 0 ? 'scaleX(1)' : 'scaleX(-1)'
+              }}
+            >
+              🐠
+            </motion.div>
+          ))}
+
+          {/* Trash Items */}
           <AnimatePresence>
             {trash.map((item) => {
-              if (item.collected) return null;
-              
               const trashStyle = trashTypes[item.type];
               
               return (
@@ -275,7 +371,7 @@ const OceanCleanupGame = () => {
                     rotate: { repeat: Infinity, duration: 3 + Math.random() * 2 },
                     y: { repeat: Infinity, duration: 2 + Math.random() }
                   }}
-                  className="absolute cursor-pointer transform hover:scale-110 transition-transform"
+                  className="absolute cursor-pointer transform hover:scale-110 transition-transform z-20"
                   style={{
                     left: `${item.x}%`,
                     top: `${item.y}%`,
@@ -301,7 +397,7 @@ const OceanCleanupGame = () => {
             })}
           </AnimatePresence>
 
-          {/* Floating Particles (Bubbles/Fish) */}
+          {/* Bubbles */}
           {[...Array(20)].map((_, i) => (
             <motion.div
               key={i}
@@ -322,32 +418,9 @@ const OceanCleanupGame = () => {
               }}
             />
           ))}
-
-          {/* Fish Swimming */}
-          {gameActive && [...Array(5)].map((_, i) => (
-            <motion.div
-              key={`fish-${i}`}
-              className="absolute text-3xl"
-              animate={{
-                x: ['0%', '100%'],
-                y: [`${20 + i * 15}%`, `${25 + i * 15}%`, `${20 + i * 15}%`]
-              }}
-              transition={{
-                x: { duration: 10 + i * 2, repeat: Infinity, ease: "linear" },
-                y: { duration: 2, repeat: Infinity, ease: "easeInOut" }
-              }}
-              style={{
-                left: '-50px',
-                top: `${20 + i * 15}%`
-              }}
-            >
-              🐠
-            </motion.div>
-          ))}
         </motion.div>
       </div>
 
-      {/* Instructions */}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -357,14 +430,14 @@ const OceanCleanupGame = () => {
         <h3 className="text-xl font-bold text-white mb-4">🎮 How to Play</h3>
         <div className="grid md:grid-cols-2 gap-4 text-blue-100">
           <div>
-            <p className="mb-2"><strong>Objective:</strong> Click on floating trash to collect it!</p>
-            <p className="mb-2"><strong>Scoring:</strong> Different trash types give different points</p>
-            <p><strong>Combos:</strong> Collect trash quickly for bonus multipliers</p>
+            <p className="mb-2"><strong>⚠️ Avoid Fish:</strong> Touching fish = -5 points!</p>
+            <p className="mb-2"><strong>🗑️ Click Trash:</strong> Collect continuously spawning trash</p>
+            <p><strong>🔥 Combos:</strong> Collect quickly for multipliers</p>
           </div>
           <div>
-            <p className="mb-2"><strong>Time Limit:</strong> 90 seconds per round</p>
-            <p className="mb-2"><strong>Level Up:</strong> Collect 80% of trash to advance</p>
-            <p><strong>Perfect Cleanup:</strong> Collect ALL trash for bonus rewards!</p>
+            <p className="mb-2"><strong>⏱️ Time:</strong> 30 seconds per round</p>
+            <p className="mb-2"><strong>📈 Level Up:</strong> Score 500+ to advance</p>
+            <p><strong>♻️ Endless Trash:</strong> New trash spawns when collected!</p>
           </div>
         </div>
       </motion.div>
