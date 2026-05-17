@@ -19,47 +19,36 @@ const Login = () => {
 
   const users = getAllUsers();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!selectedEmail || !password) {
-      setError('Please enter password');
-      return;
-    }
+    const response = await login(
+      selectedEmail,
+      password
+    );
 
-    const success = login(selectedEmail, password);
-    if (success) {
+    if (response.success) {
       nav('/dashboard');
     } else {
-      setError('Incorrect password');
+      setError(response.error || 'Login failed');
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!name.trim() || !email.trim() || !regPassword.trim()) {
-      setError('All fields required');
-      return;
-    }
+    const response = await register(
+      name.trim(),
+      email.trim(),
+      regPassword
+    );
 
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      setError('Invalid email format');
-      return;
-    }
-
-    if (regPassword.length < 4) {
-      setError('Password must be at least 4 characters');
-      return;
-    }
-
-    const success = register(name.trim(), email.trim(), regPassword);
-    if (success) {
+    if (response.success) {
       nav('/dashboard');
     } else {
-      setError('Email already exists');
+      setError(response.error || 'Registration failed');
     }
   };
 
