@@ -162,6 +162,15 @@ function reducer(state: GameState, action: any): GameState {
       };
     case 'CLEAR_NOTIFICATIONS':
       return { ...state, notifications: [] };
+    case 'UPDATE_OCEAN_STATS':
+      return {
+        ...state,
+        gameStats: {
+          ...state.gameStats,
+          totalTrashCollected: action.payload.totalTrashCollected ?? state.gameStats.totalTrashCollected,
+          perfectCleanups: action.payload.perfectCleanups ?? state.gameStats.perfectCleanups,
+        }
+      };
     case 'HYDRATE':
       return { ...state, ...action.payload };
     default:

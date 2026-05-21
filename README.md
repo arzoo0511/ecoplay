@@ -29,6 +29,7 @@
 - [Deployment](#deployment)
 - [Roadmap](#roadmap)
 - [Contributing](/docs/CONTRIBUTING.md)
+- [Contributor Introductions](CONTRIBUTOR_INTRODUCTION.md)
 - [License](#license)
 
 ---
@@ -388,6 +389,9 @@ Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in your Vercel project's **
 - [ ] Add mobile PWA support
 - [ ] Add dark mode toggle
 
+## Contributor Introductions
+
+New and returning contributors can introduce themselves in [CONTRIBUTOR_INTRODUCTION.md](CONTRIBUTOR_INTRODUCTION.md). Use the template there to share your interests, skills, public links, and collaboration goals with the EcoPlay community.
 
 ---
 

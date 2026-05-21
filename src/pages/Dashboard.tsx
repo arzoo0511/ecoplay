@@ -2,18 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import {
-  Zap,
-  Droplets,
-  TreePine,
-  Award,
-  Target,
-  TrendingUp,
-  Fish,
-  Leaf,
-  Sun,
-  ArrowUp,
-  ArrowDown
-} from 'lucide-react';
+  TbBolt,
+  TbDroplet,
+  TbTree,
+  TbAward,
+  TbTarget,
+  TbTrendingUp,
+  TbFish,
+  TbLeaf,
+  TbSun,
+  TbArrowUp,
+  TbArrowDown,
+  TbPlayerPlay
+} from 'react-icons/tb';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGamification } from '../hooks/useGamification';
@@ -193,40 +194,40 @@ const Dashboard = () => {
 
   const stats = [
     {
-      icon: Zap,
+      icon: TbBolt,
       label: 'Total Points',
       value: animatedPoints.toLocaleString(),
       change: pointsChange,
-      color: 'from-yellow-400 to-orange-500',
-      bgColor: 'bg-yellow-100',
+      color: 'text-yellow-400',
+      bgColor: 'bg-yellow-500/10 border-yellow-500/20',
       to: '/eco-village'
     },
     {
-      icon: TreePine,
+      icon: TbTree,
       label: 'Eco Score',
       value: `${animatedEcoScore}%`,
       change: ecoScoreChange,
-      color: 'from-green-400 to-emerald-600',
-      bgColor: 'bg-green-100',
+      color: 'text-green-400',
+      bgColor: 'bg-green-500/10 border-green-500/20',
       to: '/learn',
       subtitle: ecoScore >= 80 ? 'Excellent!' : ecoScore >= 60 ? 'Good Progress' : 'Keep Going!'
     },
     {
-      icon: Droplets,
+      icon: TbDroplet,
       label: 'Water Quality',
       value: `${ecoVillage.waterQuality}%`,
       change: Math.floor((ecoVillage.waterQuality - 70) / 3),
-      color: 'from-blue-400 to-cyan-500',
-      bgColor: 'bg-blue-100',
+      color: 'text-cyan-400',
+      bgColor: 'bg-cyan-500/10 border-cyan-500/20',
       to: '/eco-village'
     },
     {
-      icon: Fish,
+      icon: TbFish,
       label: 'Ocean Cleanups',
       value: gameStats.perfectCleanups.toString(),
       change: gameStats.perfectCleanups > 0 ? 1 : 0,
-      color: 'from-purple-400 to-indigo-500',
-      bgColor: 'bg-purple-100',
+      color: 'text-purple-400',
+      bgColor: 'bg-purple-500/10 border-purple-500/20',
       to: '/ocean-cleanup',
       subtitle: `${gameStats.totalTrashCollected} items collected`
     }
@@ -280,15 +281,15 @@ const Dashboard = () => {
               className="cursor-pointer bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400/40 relative overflow-hidden"
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-5`} />
-              <div className={`w-12 h-12 rounded-xl ${stat.bgColor} flex items-center justify-center mb-4 relative z-10`}>
-                <Icon className={`h-6 w-6 bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`} />
+              <div className={`w-12 h-12 rounded-xl ${stat.bgColor} flex items-center justify-center mb-4 relative z-10 border`}>
+                <Icon className={`h-6 w-6 ${stat.color}`} />
               </div>
               <div className="relative z-10">
                 <h3 className="text-2xl lg:text-3xl font-bold text-white mb-1">{stat.value}</h3>
                 {stat.change !== 0 && (
                   <div className={`flex items-center text-sm mb-2 ${isPositive ? 'text-green-400' : isNegative ? 'text-red-400' : 'text-gray-400'}`}>
-                    {isPositive && <ArrowUp className="h-3 w-3 mr-1" />}
-                    {isNegative && <ArrowDown className="h-3 w-3 mr-1" />}
+                    {isPositive && <TbArrowUp className="h-3 w-3 mr-1" />}
+                    {isNegative && <TbArrowDown className="h-3 w-3 mr-1" />}
                     <span className="font-semibold">{isPositive && '+'}{Math.abs(stat.change)}</span>
                     <span className="ml-1 text-xs opacity-70">today</span>
                   </div>
@@ -305,7 +306,7 @@ const Dashboard = () => {
         {/* Environment Status */}
         <motion.div variants={itemVariants} className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
           <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
-            <Leaf className="h-6 w-6 text-green-400 mr-2" />
+            <TbLeaf className="h-6 w-6 text-green-400 mr-2" />
             Environment Health
           </h2>
           <div className="space-y-4">
@@ -320,7 +321,7 @@ const Dashboard = () => {
                     {metric.label}
                     {metric.trend > 0 && (
                       <span className="ml-2 text-xs text-green-400 flex items-center">
-                        <ArrowUp className="h-3 w-3 mr-1" />+{metric.trend}%
+                        <TbArrowUp className="h-3 w-3 mr-1" />+{metric.trend}%
                       </span>
                     )}
                   </span>
@@ -345,19 +346,19 @@ const Dashboard = () => {
           </div>
           <div className="mt-6 grid grid-cols-3 gap-4 text-center">
             <div className="text-white bg-white/5 rounded-xl p-3">
-              <TreePine className="h-8 w-8 text-green-400 mx-auto mb-2" />
+              <TbTree className="h-8 w-8 text-green-400 mx-auto mb-2" />
               <p className="font-bold text-xl">{ecoVillage.trees}</p>
               <p className="text-sm text-blue-100">Trees Planted</p>
               <p className="text-xs text-green-400 mt-1">+{Math.floor(ecoVillage.trees * 0.15)} this week</p>
             </div>
             <div className="text-white bg-white/5 rounded-xl p-3">
-              <Sun className="h-8 w-8 text-yellow-400 mx-auto mb-2" />
+              <TbSun className="h-8 w-8 text-yellow-400 mx-auto mb-2" />
               <p className="font-bold text-xl">{ecoVillage.solarPanels}</p>
               <p className="text-sm text-blue-100">Solar Panels</p>
               <p className="text-xs text-yellow-400 mt-1">{(ecoVillage.solarPanels * 0.25).toFixed(1)}kW</p>
             </div>
             <div className="text-white bg-white/5 rounded-xl p-3">
-              <Droplets className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+              <TbDroplet className="h-8 w-8 text-blue-400 mx-auto mb-2" />
               <p className="font-bold text-xl">{ecoVillage.waterFilters}</p>
               <p className="text-sm text-blue-100">Water Filters</p>
               <p className="text-xs text-blue-400 mt-1">{(ecoVillage.waterFilters * 1000).toLocaleString()}L/day</p>
@@ -368,7 +369,7 @@ const Dashboard = () => {
         {/* Daily Challenges */}
         <motion.div variants={itemVariants} className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
           <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
-            <Target className="h-6 w-6 text-orange-400 mr-2" />
+            <TbTarget className="h-6 w-6 text-orange-400 mr-2" />
             Daily Challenges
             <span className="ml-auto text-sm text-blue-200">
               {challenges.filter(c => c.completed).length}/{challenges.length} complete
@@ -388,7 +389,7 @@ const Dashboard = () => {
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-bold text-white">{challenge.title}</h3>
                   <div className="flex items-center text-yellow-400">
-                    <Award className="h-4 w-4 mr-1" />
+                    <TbAward className="h-4 w-4 mr-1" />
                     <span className="text-sm font-bold">{challenge.points}</span>
                   </div>
                 </div>
@@ -396,7 +397,7 @@ const Dashboard = () => {
                 {challenge.completed ? (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-green-400 font-medium">
-                      <Award className="h-4 w-4 mr-2" />Completed!
+                      <TbAward className="h-4 w-4 mr-2" />Completed!
                     </div>
                     <button
                       onClick={() => startChallenge(challenge.title)}
@@ -410,7 +411,7 @@ const Dashboard = () => {
                     <div className="space-y-2">
                       <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                         <motion.div
-                          initial={{ width: 0 }}
+                           initial={{ width: 0 }}
                           animate={{ width: `${challenge.progress}%` }}
                           className="h-full bg-gradient-to-r from-orange-400 to-yellow-500 rounded-full relative"
                         >
@@ -428,6 +429,7 @@ const Dashboard = () => {
                         onClick={() => startChallenge(challenge.title)}
                         className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:from-green-600 hover:to-blue-600 transition-all"
                       >
+                        <TbPlayerPlay className="h-4 w-4 inline mr-1" />
                         Start
                       </button>
                       <button
@@ -448,7 +450,7 @@ const Dashboard = () => {
             onClick={() => navigate('/learn')}
             className="w-full mt-6 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-3 px-6 rounded-xl hover:from-green-600 hover:to-blue-600 transition-all"
           >
-            <TrendingUp className="h-5 w-5 inline mr-2" />
+            <TbTrendingUp className="h-5 w-5 inline mr-2" />
             View All Challenges
           </motion.button>
         </motion.div>
