@@ -5,6 +5,16 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EcoPlay: Interactive Environmental Platform</title>
+    <script>
+      (() => {
+        const storageKey = 'ecoplay-theme';
+        const root = document.documentElement;
+        const savedTheme = localStorage.getItem(storageKey);
+        const theme = savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'light';
+        root.classList.toggle('dark', theme === 'dark');
+        root.style.colorScheme = theme;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

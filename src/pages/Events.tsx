@@ -1,14 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Calendar, 
-  MapPin, 
-  Users, 
-  Clock, 
-  Heart,
-  Share2,
-  Plus
-} from 'lucide-react';
+import { Calendar, Heart, MapPin, Share2, Users } from 'lucide-react';
+import { glassCard, pageShell, pageSubtitle, pageTitle, primaryButton, secondaryButton } from '../lib/ui';
 
 interface Event {
   id: string;
@@ -115,27 +108,24 @@ const Events = () => {
     }
   ]);
 
-  const filteredEvents = events.filter(event => 
-    selectedFilter === 'all' || event.type === selectedFilter
-  );
+  const filteredEvents = events.filter((event) => selectedFilter === 'all' || event.type === selectedFilter);
 
   const toggleJoin = (id: string) => {
-    setEvents(prevEvents => 
-      prevEvents.map(event => {
+    setEvents((prevEvents) =>
+      prevEvents.map((event) => {
         if (event.id === id) {
           const newParticipants = event.isJoined ? event.participants - 1 : event.participants + 1;
           return { ...event, isJoined: !event.isJoined, participants: newParticipants };
         }
+
         return event;
       })
     );
   };
 
   const toggleFavorite = (id: string) => {
-    setEvents(prevEvents => 
-      prevEvents.map(event => 
-        event.id === id ? { ...event, isFavorite: !event.isFavorite } : event
-      )
+    setEvents((prevEvents) =>
+      prevEvents.map((event) => (event.id === id ? { ...event, isFavorite: !event.isFavorite } : event))
     );
   };
 
@@ -150,73 +140,76 @@ const Events = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen p-4 sm:p-6 lg:p-8"
+      className={pageShell}
     >
-      {/* Header */}
       <div className="mb-8 text-center">
-        <h1 className="text-4xl lg:text-6xl font-bold text-white mb-4">
-          📅 Environmental Events
-        </h1>
-        <p className="text-xl text-blue-100 max-w-3xl mx-auto">
+        <h1 className={`${pageTitle} mb-4`}>Environmental Events</h1>
+        <p className={pageSubtitle}>
           Join local and global environmental initiatives. Make a difference in your community and connect with like-minded eco-warriors.
         </p>
       </div>
 
-      {/* Filter Tabs */}
       <div className="mb-8">
         <div className="flex space-x-2 overflow-x-auto pb-2">
-          {['all', 'cleanup', 'workshop', 'awareness', 'education'].map(type => (
+          {['all', 'cleanup', 'workshop', 'awareness', 'education'].map((type) => (
             <button
               key={type}
               onClick={() => setSelectedFilter(type)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all ${selectedFilter === type ? 'bg-blue-500 text-white' : 'bg-white/10 text-blue-100 hover:bg-white/20'}`}
+              className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold capitalize transition-theme duration-300 ${
+                selectedFilter === type
+                  ? 'border-blue-700 bg-blue-900 text-white dark:border-emerald-500 dark:bg-gradient-to-r dark:from-emerald-500 dark:to-teal-500'
+                  : 'border-slate-200/80 bg-white/88 text-sky-950 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10'
+              }`}
             >
-              <span>{type}</span>
+              {type}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Events Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredEvents.map(event => (
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {filteredEvents.map((event) => (
           <motion.div
             key={event.id}
             whileHover={{ scale: 1.02, y: -5 }}
-            className="bg-white/10 backdrop-blur-lg rounded-2xl overflow-hidden border border-white/20 group"
+            className={`${glassCard} overflow-hidden`}
           >
             <div className="relative h-48">
-              <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <img src={event.image} alt={event.title} className="h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
               <div className="absolute bottom-4 left-4 right-4">
                 <h3 className="text-xl font-bold text-white">{event.title}</h3>
-                <div className="flex items-center text-white/80 text-sm mb-2">
-                  <Calendar className="h-4 w-4 mr-2" />
+                <div className="mb-2 flex items-center text-sm text-white/80">
+                  <Calendar className="mr-2 h-4 w-4" />
                   <span>{event.date} at {event.time}</span>
                 </div>
-                <div className="flex items-center text-white/80 text-sm">
-                  <MapPin className="h-4 w-4 mr-2" />
+                <div className="flex items-center text-sm text-white/80">
+                  <MapPin className="mr-2 h-4 w-4" />
                   <span>{event.location}</span>
                 </div>
               </div>
             </div>
 
             <div className="p-6">
-              <p className="text-blue-100 mb-4">{event.description}</p>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center text-sm text-blue-200">
-                  <Users className="h-4 w-4 mr-1" />
+              <p className="mb-4 text-sky-950/85 dark:text-slate-300">{event.description}</p>
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center text-sm text-sky-950/80 dark:text-slate-400">
+                  <Users className="mr-1 h-4 w-4" />
                   <span>{event.participants}/{event.maxParticipants} participants</span>
                 </div>
-                <div className="text-sm text-blue-200">By {event.organizer}</div>
+                <div className="text-sm text-sky-950/80 dark:text-slate-400">By {event.organizer}</div>
               </div>
 
-              <div className="flex space-x-3">
+              <div className="flex flex-wrap gap-3">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => toggleJoin(event.id)}
-                  className={`flex-1 font-bold py-3 px-4 rounded-xl transition-all ${event.isJoined ? 'bg-green-500/20 text-green-400' : 'bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600'}`}
+                  className={
+                    event.isJoined
+                      ? 'flex-1 rounded-xl bg-green-100 px-4 py-3 font-semibold text-green-900 transition-theme duration-300 dark:border dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300'
+                      : `flex-1 ${primaryButton}`
+                  }
                 >
                   {event.isJoined ? 'Joined' : 'Join Event'}
                 </motion.button>
@@ -224,17 +217,19 @@ const Events = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => shareEvent(event)}
-                  className="bg-white/10 text-white font-bold py-3 px-4 rounded-xl hover:bg-white/20 transition-all"
+                  className={secondaryButton}
                 >
-                  <Share2 className="h-4 w-4 inline" /> Share
+                  <Share2 className="h-4 w-4" />
+                  Share
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => toggleFavorite(event.id)}
-                  className="bg-white/10 text-white font-bold py-3 px-4 rounded-xl hover:bg-white/20 transition-all"
+                  className={secondaryButton}
                 >
-                  <Heart className={`h-4 w-4 inline ${event.isFavorite ? 'text-red-500' : 'text-white'}`} /> {event.isFavorite ? 'Favorited' : 'Favorite'}
+                  <Heart className={`h-4 w-4 ${event.isFavorite ? 'text-red-500' : 'text-sky-950 dark:text-slate-200'}`} />
+                  {event.isFavorite ? 'Favorited' : 'Favorite'}
                 </motion.button>
               </div>
             </div>
