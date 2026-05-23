@@ -1,12 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import bcrypt from "bcryptjs";
-import { AuthContextType, AuthResponse, StoredUser, User } from "../types/auth";
+import { supabase } from "../lib/supabase";
+import { AuthContextType, AuthResponse, User } from "../types/auth";
 import { loginSchema, registerSchema } from "../validators/auth";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const USERS_KEY = "ecoplay_users";
-const CURRENT_USER_KEY = "ecoplay_current_user";
 
 export const AuthProvider: React.FC<{
   children: React.ReactNode;
@@ -14,34 +11,36 @@ export const AuthProvider: React.FC<{
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(CURRENT_USER_KEY);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "User",
+          email: session.user.email || "",
+        });
+      }
+    });
 
-      if (!stored) return;
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "User",
+            email: session.user.email || "",
+          });
+        } else {
+          setUser(null);
+        }
+      }
+    );
 
-      const parsed: User = JSON.parse(stored);
-
-      setUser(parsed);
-    } catch (error) {
-      console.error("Failed to restore session:", error);
-      localStorage.removeItem(CURRENT_USER_KEY);
-    }
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
-
-  const getUsers = (): StoredUser[] => {
-    try {
-      const users = localStorage.getItem(USERS_KEY);
-
-      return users ? JSON.parse(users) : [];
-    } catch (error) {
-      console.error("Failed to parse users:", error);
-      return [];
-    }
-  };
-
-  const saveUsers = (users: StoredUser[]) => {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  };
 
   const register = async (
     name: string,
@@ -62,49 +61,41 @@ export const AuthProvider: React.FC<{
         };
       }
 
-      const users = getUsers();
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          data: {
+            name: name.trim(),
+          },
+        },
+      });
 
-      const existingUser = users.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase(),
-      );
-
-      if (existingUser) {
+      if (error) {
         return {
           success: false,
-          error: "Email already exists",
+          error: error.message,
         };
       }
-
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      const newUser: StoredUser = {
-        id: email.toLowerCase().replace(/[^a-z0-9]/g, "-"),
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        password: hashedPassword,
-      };
-
-      users.push(newUser);
-
-      saveUsers(users);
-
-      const userSession: User = {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-      };
-
-      setUser(userSession);
-
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userSession));
+      
+      if (data.user) {
+         const userSession: User = {
+           id: data.user.id,
+           name: name.trim(),
+           email: data.user.email || email,
+         };
+         return {
+           success: true,
+           user: userSession,
+         };
+      }
 
       return {
-        success: true,
-        user: userSession,
+        success: false,
+        error: "Registration failed",
       };
     } catch (error) {
       console.error("Registration failed:", error);
-
       return {
         success: false,
         error: "Registration failed",
@@ -129,38 +120,33 @@ export const AuthProvider: React.FC<{
         };
       }
 
-      const users = getUsers();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
 
-      const found = users.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase(),
-      );
-
-      if (!found) {
+      if (error) {
         return {
           success: false,
-          error: "Invalid credentials",
+          error: error.message,
         };
       }
-
-      const passwordMatch = await bcrypt.compare(password, found.password);
-
-      if (!passwordMatch) {
-        return {
-          success: false,
-          error: "Invalid credentials",
-        };
+      
+      if (data.user) {
+         const userSession: User = {
+           id: data.user.id,
+           name: data.user.user_metadata?.name || data.user.email?.split("@")[0] || "User",
+           email: data.user.email || email,
+         };
+         return {
+           success: true,
+           user: userSession,
+         };
       }
 
-      const userSession: User = {
-        id: found.id,
-        name: found.name,
-        email: found.email,
-      };
-      setUser(userSession);
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userSession));
       return {
-        success: true,
-        user: userSession,
+        success: false,
+        error: "Login failed",
       };
     } catch (error) {
       console.error("Login failed:", error);
@@ -171,32 +157,9 @@ export const AuthProvider: React.FC<{
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem(CURRENT_USER_KEY);
-  };
-
-  const deleteAccount = (email: string) => {
-    const users = getUsers();
-    const filtered = users.filter((u) => u.email !== email);
-
-    saveUsers(filtered);
-
-    const deletedUser = users.find((u) => u.email === email);
-
-    if (deletedUser) {
-      localStorage.removeItem(`ecoplay_state_${deletedUser.id} `);
-    }
-    if (user?.email === email) {
-      logout();
-    }
-  };
-
-  const getAllUsers = () => {
-    return getUsers().map((u) => ({
-      email: u.email,
-      name: u.name,
-    }));
   };
 
   return (
@@ -206,8 +169,6 @@ export const AuthProvider: React.FC<{
         login,
         register,
         logout,
-        deleteAccount,
-        getAllUsers,
       }}
     >
       {children}

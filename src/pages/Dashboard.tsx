@@ -130,7 +130,7 @@ const Dashboard = () => {
   const { state, dispatch } = useGame();
   const { user, ecoVillage, dailyChallenges, gameStats } = state;
   const navigate = useNavigate();
-  const { user: authUser, logout } = useAuth();
+  const { user: authUser } = useAuth();
 
   const [challenges, setChallenges] = React.useState(dailyChallenges);
   React.useEffect(() => setChallenges(dailyChallenges), [dailyChallenges]);
@@ -240,7 +240,7 @@ const Dashboard = () => {
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 } }
+    visible: { y: 0, opacity: 1, transition: { type: 'spring' as const, stiffness: 100 } }
   };
 
   return (

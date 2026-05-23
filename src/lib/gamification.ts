@@ -161,7 +161,7 @@ export async function awardXP(
  */
 async function checkAndAwardBadges(
   userId: string,
-  activityType: ActivityType,
+  _activityType: ActivityType,
   currentStreak: number
 ): Promise<string[]> {
   // Fetch all badges the user already holds

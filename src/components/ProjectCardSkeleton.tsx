@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const ProjectCardSkeleton = () => {
   return (
     <div className="flex animate-pulse flex-col items-center justify-center rounded-xl border border-slate-200/70 bg-white/70 p-4 backdrop-blur-lg transition-theme duration-300 dark:border-white/10 dark:bg-white/5">

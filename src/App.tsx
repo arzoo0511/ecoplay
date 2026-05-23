@@ -1,9 +1,9 @@
 import React from 'react';
 import LandingPage from './pages/LandingPage';
+import Layout from './components/Layout';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GameProvider } from './context/GameContext';
-import { ThemeProvider } from './context/ThemeContext';
 import Bingo from './pages/Bingo';
 import Community from './pages/Community';
 import Dashboard from './pages/Dashboard';

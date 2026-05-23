@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Heart, MapPin, Share2, Users } from 'lucide-react';
 import { glassCard, pageShell, pageSubtitle, pageTitle, primaryButton, secondaryButton } from '../lib/ui';

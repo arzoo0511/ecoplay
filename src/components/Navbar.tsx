@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { BookOpen, Home, Leaf, LogOut, TreePine, Users, Waves } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';

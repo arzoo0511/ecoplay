@@ -12,7 +12,6 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.58.0",
     "@types/react-router-dom": "^5.3.3",
-    "bcryptjs": "^3.0.3",
     "framer-motion": "^12.23.22",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.344.0",
@@ -24,7 +23,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
-    "@types/bcryptjs": "^2.4.6",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.7.0",

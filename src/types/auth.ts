@@ -4,10 +4,6 @@ export interface User {
     email: string;
 }
 
-export interface StoredUser extends User {
-    password: string;
-}
-
 export interface AuthResponse {
     success: boolean;
     error?: string;
@@ -22,7 +18,5 @@ export interface AuthContextType {
         email: string,
         password: string
     ) => Promise<AuthResponse>;
-    logout: () => void;
-    deleteAccount: (email: string) => void;
-    getAllUsers: () => { email: string; name: string }[];
+    logout: () => Promise<void>;
 }

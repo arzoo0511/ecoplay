@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   Leaf,
@@ -40,7 +40,7 @@ const FadeInSection: React.FC<{
       opacity: 1,
       y: 0,
       x: 0,
-      transition: { duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] },
+      transition: { duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] as const },
     },
   };
 
