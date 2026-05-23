@@ -34,7 +34,6 @@ export const AuthProvider: React.FC<{
     });
 
     // Keep state in sync with Supabase session events
-    // (sign-in, sign-out, token refresh, etc.)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -57,6 +56,7 @@ export const AuthProvider: React.FC<{
     password: string
   ): Promise<AuthResponse> => {
     try {
+      // Step 1: Create authentication account
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{
         };
       }
 
-      // Create the user profile row in the public users table
+      // Step 2: Create user profile
       const { error: profileError } = await supabase.from("users").insert([
         {
           id: data.user.id,
@@ -88,12 +88,20 @@ export const AuthProvider: React.FC<{
         },
       ]);
 
+      // Properly handle profile creation failure
       if (profileError) {
-        // Non-fatal: profile creation can fail on email-confirmation flows
-        console.warn("[Auth] Profile insert error:", profileError.message);
+        console.error(
+          "[Auth] Profile insert failed:",
+          profileError.message
+        );
+
+        return {
+          success: false,
+          error: "Failed to create user profile.",
+        };
       }
 
-      // Create the initial eco village row
+      // Step 3: Create eco village
       const { error: villageError } = await supabase
         .from("eco_villages")
         .insert([
@@ -109,14 +117,37 @@ export const AuthProvider: React.FC<{
           },
         ]);
 
+      // Properly handle eco village failure
       if (villageError) {
-        console.warn("[Auth] Village insert error:", villageError.message);
+        console.error(
+          "[Auth] Village initialization failed:",
+          villageError.message
+        );
+
+        // Rollback user profile creation
+        await supabase
+          .from("users")
+          .delete()
+          .eq("id", data.user.id);
+
+        return {
+          success: false,
+          error: "Failed to initialize eco village.",
+        };
       }
 
-      return { success: true, user: toAppUser(data.user) };
+      // Success
+      return {
+        success: true,
+        user: toAppUser(data.user),
+      };
     } catch (err: any) {
       console.error("[Auth] Register error:", err);
-      return { success: false, error: "An unexpected error occurred." };
+
+      return {
+        success: false,
+        error: "An unexpected error occurred.",
+      };
     }
   };
 
@@ -135,13 +166,23 @@ export const AuthProvider: React.FC<{
       }
 
       if (!data.user) {
-        return { success: false, error: "Login failed — please try again." };
+        return {
+          success: false,
+          error: "Login failed — please try again.",
+        };
       }
 
-      return { success: true, user: toAppUser(data.user) };
+      return {
+        success: true,
+        user: toAppUser(data.user),
+      };
     } catch (err: any) {
       console.error("[Auth] Login error:", err);
-      return { success: false, error: "An unexpected error occurred." };
+
+      return {
+        success: false,
+        error: "An unexpected error occurred.",
+      };
     }
   };
 
@@ -149,9 +190,10 @@ export const AuthProvider: React.FC<{
     if (user) {
       clearState(user.id);
     }
+
     await supabase.auth.signOut();
+
     setUser(null);
-    // onAuthStateChange also fires and sets user → null for safety
   };
 
   return (
@@ -171,8 +213,10 @@ export const AuthProvider: React.FC<{
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
+
   if (!context) {
     throw new Error("useAuth must be used within AuthProvider");
   }
+
   return context;
 };

@@ -3,7 +3,7 @@ import { useAuth } from './AuthContext';
 import { loadState, saveState } from '../services/persistence';
 import { awardXP } from '../lib/gamification';
 
-// Define your GameState shape (example – adapt to your existing state)
+// Define your GameState shape
 export interface GameState {
   user: { points: number; name: string };
   ecoVillage: {
@@ -92,141 +92,343 @@ const WATER_CONSUMED_PER_TREE_PER_HOUR = 2;
 const POLLUTION_PER_ANIMAL_PER_HOUR = 1.5;
 const FILTER_DEGRADATION_PER_HOUR = 3;
 
-function simulateTimePassed(state: GameState): { updates: Partial<GameState['ecoVillage']>; events: string[] } {
+function simulateTimePassed(
+  state: GameState
+): {
+  updates: Partial<GameState['ecoVillage']>;
+  events: string[];
+} {
   const now = Date.now();
   const lastUpdated = state.ecoVillage.lastUpdated || now;
   const elapsed = now - lastUpdated;
   const hoursElapsed = elapsed / (1000 * 60 * 60);
 
   const events: string[] = [];
-  const updates: Partial<GameState['ecoVillage']> = { lastUpdated: now };
+  const updates: Partial<GameState['ecoVillage']> = {
+    lastUpdated: now
+  };
 
   const rainCycles = Math.floor(elapsed / RAIN_INTERVAL_MS);
+
   if (rainCycles > 0) {
     const waterAdded = rainCycles * WATER_PER_RAIN;
-    updates.waterStorage = Math.min(200, (state.ecoVillage.waterStorage || 0) + waterAdded);
-    events.push(`🌧️ It rained ${rainCycles} time(s), adding ${waterAdded} water.`);
+
+    updates.waterStorage = Math.min(
+      200,
+      (state.ecoVillage.waterStorage || 0) + waterAdded
+    );
+
+    events.push(
+      `🌧️ It rained ${rainCycles} time(s), adding ${waterAdded} water.`
+    );
   }
 
   const treesCount = state.ecoVillage.trees || 0;
+
   if (treesCount > 0) {
-    const waterConsumed = Math.floor(treesCount * WATER_CONSUMED_PER_TREE_PER_HOUR * hoursElapsed);
-    updates.waterStorage = Math.max(0, (updates.waterStorage ?? state.ecoVillage.waterStorage) - waterConsumed);
-    if (waterConsumed > 0) events.push(`🌳 ${treesCount} tree(s) consumed ${waterConsumed} water.`);
+    const waterConsumed = Math.floor(
+      treesCount *
+        WATER_CONSUMED_PER_TREE_PER_HOUR *
+        hoursElapsed
+    );
+
+    updates.waterStorage = Math.max(
+      0,
+      (updates.waterStorage ??
+        state.ecoVillage.waterStorage) - waterConsumed
+    );
+
+    if (waterConsumed > 0) {
+      events.push(
+        `🌳 ${treesCount} tree(s) consumed ${waterConsumed} water.`
+      );
+    }
   }
 
-  const animalCount = state.ecoVillage.wildlife?.length || 0;
+  const animalCount =
+    state.ecoVillage.wildlife?.length || 0;
+
   if (animalCount > 0) {
-    const pollutionAdded = Math.floor(animalCount * POLLUTION_PER_ANIMAL_PER_HOUR * hoursElapsed);
-    updates.waterQuality = Math.max(0, (state.ecoVillage.waterQuality || 0) - pollutionAdded);
-    if (pollutionAdded > 0) events.push(`🐾 ${animalCount} animal(s) reduced water quality by ${pollutionAdded}%.`);
+    const pollutionAdded = Math.floor(
+      animalCount *
+        POLLUTION_PER_ANIMAL_PER_HOUR *
+        hoursElapsed
+    );
+
+    updates.waterQuality = Math.max(
+      0,
+      (state.ecoVillage.waterQuality || 0) -
+        pollutionAdded
+    );
+
+    if (pollutionAdded > 0) {
+      events.push(
+        `🐾 ${animalCount} animal(s) reduced water quality by ${pollutionAdded}%.`
+      );
+    }
   }
 
-  const filterCount = state.ecoVillage.waterFilters || 0;
+  const filterCount =
+    state.ecoVillage.waterFilters || 0;
+
   if (filterCount > 0) {
-    const degradation = Math.floor(FILTER_DEGRADATION_PER_HOUR * hoursElapsed);
-    updates.filterHealth = Math.max(0, (state.ecoVillage.filterHealth || 100) - degradation);
+    const degradation = Math.floor(
+      FILTER_DEGRADATION_PER_HOUR *
+        hoursElapsed
+    );
+
+    updates.filterHealth = Math.max(
+      0,
+      (state.ecoVillage.filterHealth || 100) -
+        degradation
+    );
+
     if (degradation > 0) {
-      events.push(`🔧 Water filters degraded by ${degradation}%. Health: ${updates.filterHealth}%`);
+      events.push(
+        `🔧 Water filters degraded by ${degradation}%. Health: ${updates.filterHealth}%`
+      );
+
       if ((updates.filterHealth ?? 0) < 30) {
-        events.push(`⚠️ Filters are worn out! Replace them soon.`);
+        events.push(
+          `⚠️ Filters are worn out! Replace them soon.`
+        );
       }
     }
   }
 
-  if ((updates.waterStorage ?? state.ecoVillage.waterStorage) < 20) {
+  if (
+    (updates.waterStorage ??
+      state.ecoVillage.waterStorage) < 20
+  ) {
     events.push(`💧 Water storage is critically low!`);
   }
 
   return { updates, events };
 }
 
-function reducer(state: GameState, action: any): GameState {
+function reducer(
+  state: GameState,
+  action: any
+): GameState {
   switch (action.type) {
     case 'ADD_POINTS':
-      return { ...state, user: { ...state.user, points: state.user.points + action.payload } };
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          points:
+            state.user.points + action.payload
+        }
+      };
+
     case 'UPDATE_CHALLENGE':
       return {
         ...state,
-        dailyChallenges: state.dailyChallenges.map(c =>
-          c.id === action.payload.id ? { ...c, ...action.payload.data } : c
-        )
+        dailyChallenges:
+          state.dailyChallenges.map((c) =>
+            c.id === action.payload.id
+              ? {
+                  ...c,
+                  ...action.payload.data
+                }
+              : c
+          )
       };
+
     case 'UPDATE_ECO_VILLAGE':
       return {
         ...state,
-        ecoVillage: { ...state.ecoVillage, ...action.payload, lastUpdated: Date.now() }
+        ecoVillage: {
+          ...state.ecoVillage,
+          ...action.payload,
+          lastUpdated: Date.now()
+        }
       };
+
     case 'SIMULATE_TIME':
-      const { updates, events } = simulateTimePassed(state);
+      const { updates, events } =
+        simulateTimePassed(state);
+
       return {
         ...state,
-        ecoVillage: { ...state.ecoVillage, ...updates },
+        ecoVillage: {
+          ...state.ecoVillage,
+          ...updates
+        },
         notifications: events
       };
+
     case 'CLEAR_NOTIFICATIONS':
-      return { ...state, notifications: [] };
+      return {
+        ...state,
+        notifications: []
+      };
+
     case 'UPDATE_OCEAN_STATS':
       return {
         ...state,
         gameStats: {
           ...state.gameStats,
-          totalTrashCollected: action.payload.totalTrashCollected ?? state.gameStats.totalTrashCollected,
-          perfectCleanups: action.payload.perfectCleanups ?? state.gameStats.perfectCleanups,
+          totalTrashCollected:
+            action.payload.totalTrashCollected ??
+            state.gameStats.totalTrashCollected,
+          perfectCleanups:
+            action.payload.perfectCleanups ??
+            state.gameStats.perfectCleanups
         }
       };
+
     case 'HYDRATE':
-      return { ...state, ...action.payload };
+      return {
+        ...state,
+        ...action.payload
+      };
+
     default:
       return state;
   }
 }
 
-export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const GameProvider: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const { user } = useAuth();
-  const [state, dispatchBase] = React.useReducer(reducer, initialState);
+
+  const [state, dispatchBase] =
+    React.useReducer(reducer, initialState);
 
   React.useEffect(() => {
     if (!user) return;
+
     const loaded = loadState(user.id);
+
     if (loaded) {
-      dispatchBase({ type: 'HYDRATE', payload: loaded });
-      setTimeout(() => dispatchBase({ type: 'SIMULATE_TIME' }), 100);
+      dispatchBase({
+        type: 'HYDRATE',
+        payload: loaded
+      });
+
+      setTimeout(() => {
+        dispatchBase({
+          type: 'SIMULATE_TIME'
+        });
+      }, 100);
     } else {
-      dispatchBase({ type: 'HYDRATE', payload: { ...initialState, user: { ...initialState.user, name: user.name } } });
+      dispatchBase({
+        type: 'HYDRATE',
+        payload: {
+          ...initialState,
+          user: {
+            ...initialState.user,
+            name: user.name
+          }
+        }
+      });
     }
   }, [user]);
 
   React.useEffect(() => {
     if (!user) return;
-    const t = setTimeout(() => saveState({ userId: user.id, state }), 300);
+
+    const t = setTimeout(() => {
+      saveState({
+        userId: user.id,
+        state
+      });
+    }, 300);
+
     return () => clearTimeout(t);
   }, [state, user]);
 
   // Award login bonus XP once per session
   React.useEffect(() => {
     if (!user?.id) return;
-    awardXP(user.id, 'login_bonus').catch((e) => console.error('[XP] login bonus failed:', e));
+
+    awardXP(user.id, 'login_bonus')
+      .then((result) => {
+        console.log(
+          '[XP] Login bonus awarded:',
+          result
+        );
+      })
+      .catch((e) => {
+        console.error(
+          '[XP] Login bonus failed:',
+          e
+        );
+      });
   }, [user?.id]);
 
-  const dispatch = React.useCallback((action: any) => {
-    dispatchBase(action);
+  // Improved dispatch with safe XP synchronization
+  const dispatch = React.useCallback(
+    async (action: any) => {
 
-    if (action.type === 'ADD_POINTS') {
-      if (!user?.id) {
-        console.warn('[XP] No user ID — skipping XP award');
+      // Handle XP actions safely
+      if (action.type === 'ADD_POINTS') {
+
+        if (!user?.id) {
+          console.warn(
+            '[XP] No user ID — skipping XP award'
+          );
+          return;
+        }
+
+        const activity =
+          action.activityType ??
+          'daily_challenge';
+
+        try {
+
+          console.log(
+            '[XP] Awarding XP for',
+            activity,
+            'user:',
+            user.id
+          );
+
+          // Wait for backend confirmation FIRST
+          const result = await awardXP(
+            user.id,
+            activity,
+            action.metadata
+          );
+
+          console.log(
+            '[XP] Award result:',
+            result
+          );
+
+          // Only update local state after success
+          dispatchBase(action);
+
+        } catch (e) {
+
+          console.error(
+            '[XP] Award failed:',
+            e
+          );
+
+          // Prevent inconsistent UI state
+          return;
+        }
+
         return;
       }
-      const activity = action.activityType ?? 'daily_challenge';
-      console.log('[XP] Awarding XP for', activity, 'user:', user.id);
-      awardXP(user.id, activity, action.metadata)
-        .then((result) => console.log('[XP] Award result:', result))
-        .catch((e) => console.error('[XP] Award failed:', e));
-    }
-  }, [user?.id]);
-  
+
+      // Normal actions
+      dispatchBase(action);
+
+    },
+    [user?.id]
+  );
+
   return (
-    <GameContext.Provider value={{ state, dispatch }}>
+    <GameContext.Provider
+      value={{
+        state,
+        dispatch
+      }}
+    >
       {children}
     </GameContext.Provider>
   );
@@ -234,6 +436,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useGame = () => {
   const ctx = React.useContext(GameContext);
-  if (!ctx) throw new Error('useGame must be used within GameProvider');
+
+  if (!ctx) {
+    throw new Error(
+      'useGame must be used within GameProvider'
+    );
+  }
+
   return ctx;
 };
