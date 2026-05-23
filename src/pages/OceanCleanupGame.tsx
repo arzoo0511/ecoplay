@@ -41,6 +41,12 @@ const OceanCleanupGame = () => {
   const [totalCollected, setTotalCollected] = useState(0);
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const mousePos = useRef({ x: 0, y: 0 });
+  const fishRef = useRef<Fish[]>([]);
+
+  useEffect(() => {
+    fishRef.current = fish;
+  }, [fish]);
+
   // Guard: ensures final score is committed to GameContext exactly once per round.
   const hasCommittedScoreRef = useRef(false);
 
@@ -164,7 +170,10 @@ const OceanCleanupGame = () => {
     if (!gameActive) return;
 
     const fishInterval = setInterval(() => {
-      setFish(prev => prev.map(f => {
+      let collisionOccurred = false;
+      const currentFish = fishRef.current;
+      
+      const newFish = currentFish.map(f => {
         let newX = f.x + (f.speed * f.direction * 0.5);
         let newDirection = f.direction;
         
@@ -179,7 +188,7 @@ const OceanCleanupGame = () => {
         const dy = Math.abs(mousePos.current.y - f.y);
         
         if (dx < 5 && dy < 5) {
-          handleFishCollision();
+          collisionOccurred = true;
         }
 
         return {
@@ -187,7 +196,13 @@ const OceanCleanupGame = () => {
           x: newX,
           direction: newDirection
         };
-      }));
+      });
+
+      setFish(newFish);
+
+      if (collisionOccurred) {
+        handleFishCollision();
+      }
     }, 50);
 
     return () => clearInterval(fishInterval);
@@ -215,21 +230,23 @@ const OceanCleanupGame = () => {
     }
   }, [dispatch, score, totalCollected, state.gameStats]);
 
+  // Timer tick
   useEffect(() => {
     if (!gameActive) return;
 
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          endGame();
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeLeft(prev => Math.max(0, prev - 1));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [gameActive, endGame]);
+  }, [gameActive]);
+
+  // End game condition
+  useEffect(() => {
+    if (gameActive && timeLeft === 0) {
+      endGame();
+    }
+  }, [gameActive, timeLeft, endGame]);
 
   useEffect(() => {
     if (combo > 0 && combo % 5 === 0) {
