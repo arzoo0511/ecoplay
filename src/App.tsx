@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GameProvider } from './context/GameContext';
@@ -6,14 +6,21 @@ import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
 import Auth from './pages/Auth';
 
-const Bingo = React.lazy(() => import('./pages/Bingo'));
-const Community = React.lazy(() => import('./pages/Community'));
-const Dashboard = React.lazy(() => import('./pages/Dashboard'));
-const EcoVillage = React.lazy(() => import('./pages/EcoVillage'));
-const Events = React.lazy(() => import('./pages/Events'));
-const LandingPage = React.lazy(() => import('./pages/LandingPage'));
-const Learn = React.lazy(() => import('./pages/Learn'));
-const OceanCleanupGame = React.lazy(() => import('./pages/OceanCleanupGame'));
+const Bingo            = lazy(() => import('./pages/Bingo'));
+const Community        = lazy(() => import('./pages/Community'));
+const Dashboard        = lazy(() => import('./pages/Dashboard'));
+const EcoVillage       = lazy(() => import('./pages/EcoVillage'));
+const Events           = lazy(() => import('./pages/Events'));
+const LandingPage      = lazy(() => import('./pages/LandingPage'));
+const Learn            = lazy(() => import('./pages/Learn'));
+const OceanCleanupGame = lazy(() => import('./pages/OceanCleanupGame'));
+
+/** Shown while a lazy-loaded route chunk is being fetched. */
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="text-green-600 font-semibold text-xl">Loading...</div>
+  </div>
+);
 
 /**
  * Protects routes that require authentication.
@@ -42,11 +49,7 @@ export default function App() {
       <AuthProvider>
         <GameProvider>
           <BrowserRouter>
-            <Suspense fallback={
-              <div className="min-h-screen flex items-center justify-center text-white text-xl">
-                Loading...
-              </div>
-            }>
+            <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<LandingPage />} />
