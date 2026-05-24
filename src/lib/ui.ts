@@ -39,3 +39,30 @@ export const sectionTitle = 'text-2xl font-bold text-slate-950 dark:text-white';
 export const mutedText = 'text-sky-950/90 dark:text-slate-300';
 
 export const subtleText = 'text-slate-700 dark:text-slate-400';
+
+// Minimal toast fallback used across the app. In production this can be
+// replaced with a proper toasting library (e.g., react-hot-toast).
+export const toast = {
+  error: (msg: string) => {
+    try {
+      if (typeof window !== 'undefined' && (window as any).toast?.error) {
+        (window as any).toast.error(msg);
+        return;
+      }
+    } catch (_) {
+      // ignore
+    }
+    // Best-effort fallback to console to avoid runtime crashes
+    // when a toasting library isn't wired up.
+    // eslint-disable-next-line no-console
+    console.error('[toast.error]', msg);
+  },
+  success: (msg: string) => {
+    // eslint-disable-next-line no-console
+    console.log('[toast.success]', msg);
+  },
+  info: (msg: string) => {
+    // eslint-disable-next-line no-console
+    console.log('[toast.info]', msg);
+  },
+};

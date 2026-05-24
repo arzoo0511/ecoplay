@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from '../lib/ui';
 import {
   awardXP,
   getUserStats,
@@ -94,6 +95,7 @@ export function useGamification(userId: string | null) {
           : s.stats,
       }));
 
+      // THIS IS THE EXISTING TRY/CATCH BLOCK:
       try {
         const result = await awardXP(userId, activityType, metadata);
 
@@ -105,12 +107,15 @@ export function useGamification(userId: string | null) {
         // Rollback optimistic update on failure
         await loadAll();
         setState((s) => ({ ...s, error: err.message }));
+        
+        // 👉 ADD THIS LINE RIGHT HERE:
+        toast.error("Network error: Failed to award XP. Your progress has been reverted.");
+        
         return null;
       }
     },
     [userId, state.streak, loadAll]
   );
-
   // ── Load a specific leaderboard page ──
   const loadLeaderboardPage = useCallback(async (page: number, perPage = 20) => {
     setState((s) => ({ ...s, loading: true }));

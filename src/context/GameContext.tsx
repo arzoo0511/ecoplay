@@ -160,6 +160,15 @@ function reducer(state: GameState, action: any): GameState {
   switch (action.type) {
     case 'ADD_POINTS':
       return { ...state, user: { ...state.user, points: state.user.points + action.payload } };
+
+      case 'REMOVE_POINTS':
+      return { 
+        ...state, 
+        user: { 
+          ...state.user, 
+          points: Math.max(0, state.user.points - action.payload) 
+        } 
+      };
     case 'UPDATE_CHALLENGE':
       return {
         ...state,
@@ -167,6 +176,7 @@ function reducer(state: GameState, action: any): GameState {
           c.id === action.payload.id ? { ...c, ...action.payload.data } : c
         )
       };
+
     case 'REFRESH_CHALLENGES':
       return {
         ...state,

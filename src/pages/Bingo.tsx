@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { Award, X, CheckCircle, Trophy, Target, Zap } from 'lucide-react';
 import { dbFunctions } from '../lib/supabase';
+import { toast } from '../lib/ui';
 
 type SDGGoal = {
     title: string;
@@ -342,7 +343,7 @@ const Bingo = () => {
         return Math.floor(total * completed / 3);
     };
 
-    const toggleTask = async (goalIndex: number, taskIndex: number) => {
+   const toggleTask = async (goalIndex: number, taskIndex: number) => {
         const goalState = completionState[goalIndex];
         const wasChecked = goalState?.tasks[taskIndex] ?? false;
 
@@ -353,7 +354,7 @@ const Bingo = () => {
             ? total - Math.floor(total / 3) * 2
             : Math.floor(total / 3);
             
-        // Optimistic UI updates
+        // 1. Optimistic UI updates (Assume success)
         dispatch({ type: 'ADD_POINTS', payload: taskPoints });
         setCompletionState(prev => {
             const prevGoal = prev[goalIndex] || { tasks: [false, false, false] as [boolean, boolean, boolean] };
@@ -362,10 +363,31 @@ const Bingo = () => {
             return { ...prev, [goalIndex]: { tasks: newTasks } };
         });
 
-        // Backend Sync
-        const newState = await dbFunctions.toggleBingoMission(goalIndex, taskIndex);
-        if (newState) {
-            setCompletionState(newState as CompletionState);
+        // 2. Backend Sync with Try/Catch Fallback
+        try {
+            const newState = await dbFunctions.toggleBingoMission(goalIndex, taskIndex);
+            if (newState) {
+                setCompletionState(newState as CompletionState);
+            } else {
+                throw new Error("Failed to sync with server");
+            }
+        } catch (error) {
+            console.error("Bingo Sync Error:", error);
+            
+            // 3. REVERT ON FAILURE
+            toast.error("Network error: Failed to claim Bingo square. Reverting points.");
+            
+            // Revert points in context
+            dispatch({ type: 'REMOVE_POINTS', payload: taskPoints }); 
+            
+            // Revert local bingo board UI state
+            setCompletionState(prev => {
+                const prevGoal = prev[goalIndex];
+                if (!prevGoal) return prev;
+                const newTasks = [...prevGoal.tasks] as [boolean, boolean, boolean];
+                newTasks[taskIndex] = false;
+                return { ...prev, [goalIndex]: { tasks: newTasks } };
+            });
         }
     };
 
