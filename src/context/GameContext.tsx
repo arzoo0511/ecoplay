@@ -2,6 +2,8 @@ import React from 'react';
 import { useAuth } from './AuthContext';
 import { loadState, saveState } from '../services/persistence';
 import { awardXP } from '../lib/gamification';
+import { initPreferences, RecommendedChallenge } from '../services/recommendation';
+
 
 // Define your GameState shape (example – adapt to your existing state)
 export interface GameState {
@@ -29,6 +31,9 @@ export interface GameState {
     progress: number;
     completed: boolean;
   }[];
+  recommendedChallenges?: RecommendedChallenge[];
+  categoryPreferences?: Record<string, number>;
+  lastRecommendationsRefresh?: number;
   gameStats: {
     totalTrashCollected: number;
     perfectCleanups: number;
@@ -77,6 +82,9 @@ const initialState: GameState = {
     landscape: []
   },
   dailyChallenges: [],
+  recommendedChallenges: [],
+  categoryPreferences: initPreferences(),
+  lastRecommendationsRefresh: 0,
   gameStats: {
     totalTrashCollected: 0,
     perfectCleanups: 0
@@ -165,6 +173,24 @@ function reducer(state: GameState, action: any): GameState {
         dailyChallenges: action.payload.challenges,
         lastChallengeRefresh: action.payload.lastChallengeRefresh
       };
+    case 'UPDATE_RECOMMENDED_CHALLENGE':
+      return {
+        ...state,
+        recommendedChallenges: (state.recommendedChallenges || []).map(c =>
+          c.id === action.payload.id ? { ...c, ...action.payload.data } : c
+        )
+      };
+    case 'REFRESH_RECOMMENDATIONS':
+      return {
+        ...state,
+        recommendedChallenges: action.payload.challenges,
+        lastRecommendationsRefresh: action.payload.lastRecommendationsRefresh
+      };
+    case 'UPDATE_PREFERENCES':
+      return {
+        ...state,
+        categoryPreferences: action.payload
+      };
     case 'UPDATE_ECO_VILLAGE':
       return {
         ...state,
@@ -189,7 +215,12 @@ function reducer(state: GameState, action: any): GameState {
         }
       };
     case 'HYDRATE':
-      return { ...state, ...action.payload };
+      return {
+        ...state,
+        ...action.payload,
+        categoryPreferences: action.payload.categoryPreferences || state.categoryPreferences || initPreferences(),
+        recommendedChallenges: action.payload.recommendedChallenges || state.recommendedChallenges || []
+      };
     default:
       return state;
   }

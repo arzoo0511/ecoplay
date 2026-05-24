@@ -18,6 +18,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGamification } from '../hooks/useGamification';
+import { RecommendedChallenges } from '../components/RecommendedChallenges';
+
 
 // ─── XP Panel Component ───────────────────────────────────────
 
@@ -507,6 +509,11 @@ const Dashboard = () => {
             View All Challenges
           </motion.button>
         </motion.div>
+      </div>
+
+      {/* Recommended Challenges */}
+      <div className="mt-8">
+        <RecommendedChallenges />
       </div>
 
       {/* XP / Streak / Leaderboard Panel */}
