@@ -115,7 +115,7 @@ CREATE POLICY "Users can update own data" ON users FOR UPDATE USING (auth.uid() 
 CREATE POLICY "Users can insert own data" ON users FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Users can manage own village" ON eco_villages FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage own scores" ON game_scores FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage own scores" ON game_scores FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can manage own challenges" ON challenges FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can manage own posts" ON community_posts FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Anyone can view events" ON events FOR SELECT USING (true);
