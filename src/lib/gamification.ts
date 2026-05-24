@@ -62,11 +62,11 @@ export interface LeaderboardEntry {
 // Used client-side for optimistic UI updates.
 
 export function computeStreakMultiplier(currentStreak: number): number {
-  if (currentStreak >= 30) return 3.0;
+  if (currentStreak >= 30) return 3;
   if (currentStreak >= 14) return 2.5;
-  if (currentStreak >= 7)  return 2.0;
+  if (currentStreak >= 7)  return 2;
   if (currentStreak >= 3)  return 1.5;
-  return 1.0;
+  return 1;
 }
 
 // ─── XP Award ────────────────────────────────────────────────
@@ -82,7 +82,10 @@ export async function awardXP(
   activityType: ActivityType,
   metadata?: Record<string, unknown>
 ): Promise<XPAwardResult> {
-  // Fetch current level BEFORE insert for level-up detection
+
+
+
+  // 4. Fetch current level BEFORE insert for level-up detection
   const { data: statsBefore } = await supabase
     .from('user_stats')
     .select('current_level')
@@ -102,7 +105,16 @@ export async function awardXP(
     throw error;
   }
 
-  const result = data as any;
+  interface AwardXPSecureResult {
+    final_xp: number;
+    base_xp: number;
+    difficulty_weight: number;
+    streak_multiplier: number;
+    new_total_xp: number;
+    new_level: number;
+    current_streak: number;
+  }
+  const result = data as AwardXPSecureResult;
 
   // Check for newly earned badges
   const newBadges = await checkAndAwardBadges(userId, activityType, result.current_streak ?? 0);
@@ -136,7 +148,7 @@ async function checkAndAwardBadges(
     .select('badge_key')
     .eq('user_id', userId);
 
-  const alreadyEarned = new Set((existing ?? []).map((r) => r.badge_key));
+  const alreadyEarned = new Set((existing ?? []).map((r: { badge_key: string }) => r.badge_key));
 
   // Fetch activity counts needed for badge evaluation
   const { data: counts } = await supabase
@@ -144,7 +156,7 @@ async function checkAndAwardBadges(
     .select('activity_type')
     .eq('user_id', userId);
 
-  const activityCounts = (counts ?? []).reduce<Record<string, number>>((acc, row) => {
+  const activityCounts = (counts ?? []).reduce<Record<string, number>>((acc, row: { activity_type: string }) => {
     acc[row.activity_type] = (acc[row.activity_type] ?? 0) + 1;
     return acc;
   }, {});
@@ -160,24 +172,23 @@ async function checkAndAwardBadges(
   // Evaluate conditions
   const candidates: string[] = [];
 
-  if (!alreadyEarned.has('first_cleanup') && (activityCounts['ocean_cleanup_basic'] ?? 0) >= 1)
-    candidates.push('first_cleanup');
+  const conditions = [
+    { key: 'first_cleanup',    met: (activityCounts['ocean_cleanup_basic'] ?? 0) >= 1 },
+    { key: 'streak_3',         met: currentStreak >= 3 },
+    { key: 'streak_7',         met: currentStreak >= 7 },
+    { key: 'streak_30',        met: currentStreak >= 30 },
+    { key: 'level_5',          met: currentLevel >= 5 },
+    { key: 'level_10',         met: currentLevel >= 10 },
+    { key: 'community_voice',  met: (activityCounts['community_post'] ?? 0) >= 10 },
+    { key: 'eco_builder',      met: (activityCounts['eco_village_upgrade'] ?? 0) >= 5 },
+    { key: 'knowledge_seeker', met: (activityCounts['learn_video'] ?? 0) >= 10 }
+  ];
 
-  if (!alreadyEarned.has('streak_3')  && currentStreak >= 3)  candidates.push('streak_3');
-  if (!alreadyEarned.has('streak_7')  && currentStreak >= 7)  candidates.push('streak_7');
-  if (!alreadyEarned.has('streak_30') && currentStreak >= 30) candidates.push('streak_30');
-
-  if (!alreadyEarned.has('level_5')  && currentLevel >= 5)  candidates.push('level_5');
-  if (!alreadyEarned.has('level_10') && currentLevel >= 10) candidates.push('level_10');
-
-  if (!alreadyEarned.has('community_voice') && (activityCounts['community_post'] ?? 0) >= 10)
-    candidates.push('community_voice');
-
-  if (!alreadyEarned.has('eco_builder') && (activityCounts['eco_village_upgrade'] ?? 0) >= 5)
-    candidates.push('eco_builder');
-
-  if (!alreadyEarned.has('knowledge_seeker') && (activityCounts['learn_video'] ?? 0) >= 10)
-    candidates.push('knowledge_seeker');
+  for (const { key, met } of conditions) {
+    if (!alreadyEarned.has(key) && met) {
+      candidates.push(key);
+    }
+  }
 
   if (candidates.length === 0) return [];
 
@@ -222,7 +233,7 @@ export async function getUserStreak(userId: string): Promise<UserStreak> {
     currentStreak:    data?.current_streak    ?? 0,
     longestStreak:    data?.longest_streak    ?? 0,
     lastActivityDate: data?.last_activity_date ?? null,
-    streakMultiplier: data?.streak_multiplier  ?? 1.0,
+    streakMultiplier: data?.streak_multiplier  ?? 1,
   };
 }
 
