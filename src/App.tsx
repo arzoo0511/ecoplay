@@ -1,19 +1,19 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GameProvider } from './context/GameContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
-
 import Auth from './pages/Auth';
-import Bingo from './pages/Bingo';
-import Community from './pages/Community';
-import Dashboard from './pages/Dashboard';
-import EcoVillage from './pages/EcoVillage';
-import Events from './pages/Events';
-import LandingPage from './pages/LandingPage';
-import Learn from './pages/Learn';
-import OceanCleanupGame from './pages/OceanCleanupGame';
+
+const Bingo = React.lazy(() => import('./pages/Bingo'));
+const Community = React.lazy(() => import('./pages/Community'));
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const EcoVillage = React.lazy(() => import('./pages/EcoVillage'));
+const Events = React.lazy(() => import('./pages/Events'));
+const LandingPage = React.lazy(() => import('./pages/LandingPage'));
+const Learn = React.lazy(() => import('./pages/Learn'));
+const OceanCleanupGame = React.lazy(() => import('./pages/OceanCleanupGame'));
 
 /**
  * Protects routes that require authentication.
@@ -42,23 +42,29 @@ export default function App() {
       <AuthProvider>
         <GameProvider>
           <BrowserRouter>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<Auth />} />
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center text-white text-xl">
+                Loading...
+              </div>
+            }>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<Auth />} />
 
-              {/* Protected routes */}
-              <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
-              <Route path="/ocean-cleanup-game" element={<Protected><OceanCleanupGame /></Protected>} />
-              <Route path="/eco-village" element={<Protected><EcoVillage /></Protected>} />
-              <Route path="/learn" element={<Protected><Learn /></Protected>} />
-              <Route path="/bingo" element={<Protected><Bingo /></Protected>} />
-              <Route path="/community" element={<Protected><Community /></Protected>} />
-              <Route path="/events" element={<Protected><Events /></Protected>} />
+                {/* Protected routes */}
+                <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
+                <Route path="/ocean-cleanup-game" element={<Protected><OceanCleanupGame /></Protected>} />
+                <Route path="/eco-village" element={<Protected><EcoVillage /></Protected>} />
+                <Route path="/learn" element={<Protected><Learn /></Protected>} />
+                <Route path="/bingo" element={<Protected><Bingo /></Protected>} />
+                <Route path="/community" element={<Protected><Community /></Protected>} />
+                <Route path="/events" element={<Protected><Events /></Protected>} />
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </Suspense>
           </BrowserRouter>
         </GameProvider>
       </AuthProvider>
