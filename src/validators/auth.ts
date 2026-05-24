@@ -1,12 +1,30 @@
-import { z } from "zod";
+/**
+ * Validates a registration password against all strength requirements.
+ * Returns an array of human-readable error messages for each unmet rule.
+ * An empty array means the password satisfies all requirements.
+ */
+export function validatePassword(password: string): string[] {
+  const errors: string[] = [];
 
-export const registerSchema = z.object({
-    name: z.string().trim().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Invalid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-});
+  if (password.length < 8) {
+    errors.push('Password must be at least 8 characters long');
+  }
 
-export const loginSchema = z.object({
-    email: z.string().email("Invalid email address"),
-    password: z.string().min(1, "Password is required"),
-});
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
+
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter');
+  }
+
+  if (!/[0-9]/.test(password)) {
+    errors.push('Password must contain at least one numeric digit');
+  }
+
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    errors.push('Password must contain at least one special character');
+  }
+
+  return errors;
+}

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Leaf, Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { validatePassword } from '../validators/auth';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -40,6 +41,12 @@ const Auth = () => {
         }
         navigate('/dashboard');
       } else {
+        // Strong password validation — signup only
+        const passwordValidationErrors = validatePassword(formData.password);
+        if (passwordValidationErrors.length > 0) {
+          setError(passwordValidationErrors.join('\n'));
+          return;
+        }
         if (formData.password !== formData.confirmPassword) {
           setError('Passwords do not match.');
           return;
@@ -51,8 +58,12 @@ const Auth = () => {
         }
         navigate('/dashboard');
       }
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }
@@ -172,7 +183,7 @@ const Auth = () => {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-red-50 border-2 border-red-300 text-red-800 p-3 rounded-xl text-sm font-medium"
+              className="bg-red-50 border-2 border-red-300 text-red-800 p-3 rounded-xl text-sm font-medium whitespace-pre-line"
             >
               {error}
             </motion.div>
