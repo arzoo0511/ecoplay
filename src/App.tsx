@@ -1,19 +1,20 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GameProvider } from './context/GameContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
-import Auth from './pages/Auth';
 
-const Bingo = React.lazy(() => import('./pages/Bingo'));
-const Community = React.lazy(() => import('./pages/Community'));
-const Dashboard = React.lazy(() => import('./pages/Dashboard'));
-const EcoVillage = React.lazy(() => import('./pages/EcoVillage'));
-const Events = React.lazy(() => import('./pages/Events'));
-const LandingPage = React.lazy(() => import('./pages/LandingPage'));
-const Learn = React.lazy(() => import('./pages/Learn'));
-const OceanCleanupGame = React.lazy(() => import('./pages/OceanCleanupGame'));
+// Lazy load the heavy page components to split the JS bundle
+const Auth = lazy(() => import('./pages/Auth'));
+const Bingo = lazy(() => import('./pages/Bingo'));
+const Community = lazy(() => import('./pages/Community'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const EcoVillage = lazy(() => import('./pages/EcoVillage'));
+const Events = lazy(() => import('./pages/Events'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const Learn = lazy(() => import('./pages/Learn'));
+const OceanCleanupGame = lazy(() => import('./pages/OceanCleanupGame'));
 
 /**
  * Protects routes that require authentication.
@@ -36,17 +37,21 @@ const Protected: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <Layout>{children}</Layout>;
 };
 
+// Shared loading fallback for lazy-loaded chunks
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center text-white text-xl">
+    Loading...
+  </div>
+);
+
 export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
         <GameProvider>
           <BrowserRouter>
-            <Suspense fallback={
-              <div className="min-h-screen flex items-center justify-center text-white text-xl">
-                Loading...
-              </div>
-            }>
+            {/* Suspense boundary manages the loading state while chunks are fetched over the network */}
+            <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<LandingPage />} />
