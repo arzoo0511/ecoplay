@@ -177,14 +177,12 @@ async function checkAndAwardBadges(
   }
 
   try {
-
-  // Batch-insert newly earned badges securely via RPC
-  const { error } = await supabase.rpc('award_badges_secure', {
-    p_badge_keys: candidates
-  });
+    // Batch-insert newly earned badges securely via RPC
+    const { error } = await supabase.rpc('award_badges_secure', {
+      p_badge_keys: candidates
+    });
 
     if (error) {
-
       console.error(
         '[EcoPlay] getUserBadges failed:',
         error
@@ -193,28 +191,28 @@ async function checkAndAwardBadges(
       return [];
     }
 
-    return data ?? [];
+    return candidates;
+  } catch (error) {
+  console.error(
+    '[EcoPlay] checkAndAwardBadges crashed:',
+    error
+  );
 
-export async function getUserStreak(userId: string): Promise<UserStreak> {
-  const { data } = await supabase
-    .from('user_streaks')
-    .select('current_streak, longest_streak, last_activity_date, streak_multiplier')
-    .eq('user_id', userId)
-    .single();
-
-  return {
-    currentStreak:    data?.current_streak    ?? 0,
-    longestStreak:    data?.longest_streak    ?? 0,
-    lastActivityDate: data?.last_activity_date ?? null,
-    streakMultiplier: data?.streak_multiplier  ?? 1,
-  };
+  return [];
+}
 }
 
-    console.error(
-      '[EcoPlay] getUserBadges crashed:',
-      error
-    );
+  export async function getUserStreak(userId: string): Promise<UserStreak> {
+    const { data } = await supabase
+      .from('user_streaks')
+      .select('current_streak, longest_streak, last_activity_date, streak_multiplier')
+      .eq('user_id', userId)
+      .single();
 
-    return [];
+    return {
+      currentStreak: data?.current_streak ?? 0,
+      longestStreak: data?.longest_streak ?? 0,
+      lastActivityDate: data?.last_activity_date ?? null,
+      streakMultiplier: data?.streak_multiplier ?? 1,
+    };
   }
-}

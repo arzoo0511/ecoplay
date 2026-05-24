@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { AuthContextType, AuthResponse, User } from "../types/auth";
 import { clearState } from "../services/persistence";
+import { getPasswordValidationErrors } from "../validators/auth";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -57,6 +58,15 @@ export const AuthProvider: React.FC<{
     password: string
   ): Promise<AuthResponse> => {
     try {
+            const passwordErrors = getPasswordValidationErrors(password);
+
+      if (passwordErrors.length > 0) {
+        return {
+          success: false,
+          error: passwordErrors.join('\n')
+        };
+      }
+
       // Step 1: Create authentication account
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),

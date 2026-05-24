@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Leaf, Mail, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Leaf, Mail, Lock, User, Check, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getPasswordValidationErrors } from '../validators/auth';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -32,7 +33,7 @@ const Auth = () => {
   const validateName = (name: string) => {
     return /^[a-zA-Z\s]+$/.test(name.trim());
   };
-  
+
   //password strength checker
   const getPasswordStrength = (password: string) => {
     if (password.length < 8) return 'Weak';
@@ -53,6 +54,24 @@ const Auth = () => {
     () => getPasswordStrength(formData.password),
     [formData.password]
   );
+
+  const passwordRequirements = useMemo(() => {
+    if (isLogin) return [];
+    return [
+      { label: 'At least 8 characters', regex: /.{8,}/ },
+      { label: 'At least one uppercase letter (A-Z)', regex: /[A-Z]/ },
+      { label: 'At least one lowercase letter (a-z)', regex: /[a-z]/ },
+      { label: 'At least one numeric digit (0-9)', regex: /[0-9]/ },
+      { label: 'At least one special character (@, #, $, %, &, etc.)', regex: /[^A-Za-z0-9\s]/ },
+    ];
+  }, [isLogin]);
+
+  const passwordValidationStatus = useMemo(() => {
+    return passwordRequirements.map((req) => ({
+      ...req,
+      met: req.regex.test(formData.password),
+    }));
+  }, [formData.password, passwordRequirements]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -90,7 +109,7 @@ const Auth = () => {
     }
 
     //name validation
-    if (name === 'name' ) {
+    if (name === 'name') {
       const trimmedValue = value.trim();
       if (!trimmedValue) {
         setFieldErrors((prev) => ({
@@ -135,7 +154,7 @@ const Auth = () => {
         errors.push('One number');
       }
 
-      if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
+      if (!/[^A-Za-z0-9\s]/.test(value)) {
         errors.push('One special character');
       }
 
@@ -145,7 +164,7 @@ const Auth = () => {
 
         confirmPassword:
           formData.confirmPassword &&
-          value !== formData.confirmPassword
+            value !== formData.confirmPassword
             ? 'Passwords do not match.'
             : ''
       }));
@@ -194,22 +213,15 @@ const Auth = () => {
           return;
         }
 
-        const password = formData.password;
-        if (
-          password.length < 8 ||
-          !/[A-Z]/.test(password) ||
-          !/[a-z]/.test(password) ||
-          !/\d/.test(password) ||
-          !/[!@#$%^&*(),.?":{}|<>]/.test(password)
-        ) {
-          setError(
-            'Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.'
-          );
-          return;
-        }
+        const passwordErrors = getPasswordValidationErrors(formData.password);
+        const signupErrors = [...passwordErrors];
 
         if (formData.password !== formData.confirmPassword) {
-          setError('Passwords do not match.');
+          signupErrors.unshift('Passwords do not match.');
+        }
+
+        if (signupErrors.length > 0) {
+          setError(signupErrors.join('\n'));
           return;
         }
         const result = await register(
@@ -313,7 +325,6 @@ const Auth = () => {
             )}
           </div>
 
-          <div>
             <label htmlFor="password" className="block text-gray-800 font-semibold text-sm mb-2">
               Password
             </label>
@@ -341,99 +352,111 @@ const Auth = () => {
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
-
-            {!isLogin && formData.password && (
-              <div className="mt-2">
-                <p className="text-sm text-gray-300">
-                  Password Strength:
-                  <span
-                    className={`ml-2 font-semibold ${
-                      passwordStrength === 'Weak'
-                        ? 'text-red-400'
-                        : passwordStrength === 'Medium'
-                        ? 'text-yellow-400'
-                        : 'text-green-400'
-                    }`}
-                  >
-                    {passwordStrength}
-                  </span>
-                </p>
-              </div>
-            )}
-
-            {fieldErrors.password && (
-              <p id="password-error" role="alert" className="text-red-300 text-sm mt-2">
-                {fieldErrors.password}
+            {!isLogin && (
+              <p className="mt-2 text-sm text-gray-600">
+                Password must meet the following requirements:
               </p>
             )}
-          </div>
-
-          {isLogin && (
-            <div className="flex justify-end -mt-2">
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!formData.email) {
-                    setError('Please enter your email first.');
-                    return;
-                  }
-
-                  setLoading(true);
-
-                  const result = await forgotPassword(formData.email);
-
-                  if (!result.success) {
-                    setError(result.error || 'Failed to send reset email.');
-                  } else {
-                    setError('');
-                    alert('Password reset email sent! Check your inbox.');
-                  }
-
-                  setLoading(false);
-                }}
-                className="text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
-              >
-                Forgot Password?
-              </button>
-            </div>
-          )}
-
-          {!isLogin && (
-            <div>
-              <label htmlFor="confirmPassword" className="block text-gray-800 font-semibold text-sm mb-2">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                <input
-                  id="confirmPassword"
-                  type={showPassword ? 'text' : 'password'}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  aria-invalid={!!fieldErrors.confirmPassword}
-                  aria-describedby={fieldErrors.confirmPassword ? 'confirmPassword-error' : undefined}
-                  className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
-                  placeholder="Confirm your password"
-                  aria-label="Confirm Password"
-                  required={!isLogin}
-                />
+            {!isLogin && formData.password && (
+              <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                <div className="space-y-2">
+                  {passwordValidationStatus.map((req, index) => (
+                    <div key={index} className="flex items-center gap-2 text-sm">
+                      {req.met ? (
+                        <Check className="h-4 w-4 flex-shrink-0 text-green-500" />
+                      ) : (
+                        <X className="h-4 w-4 flex-shrink-0 text-red-500" />
+                      )}
+                      <span className={req.met ? 'text-green-700' : 'text-gray-600'}>
+                        {req.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              {fieldErrors.confirmPassword && (
-                <p id="confirmPassword-error" role="alert" className="text-red-300 text-sm mt-2">
-                  {fieldErrors.confirmPassword}
-                </p>
-              )}
-            </div>
-          )}
+            )}
 
-          {error && (
+            {isLogin && (
+              <div className="flex justify-end -mt-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!formData.email) {
+                      setError('Please enter your email first.');
+                      return;
+                    }
+
+                    setLoading(true);
+
+                    const result = await forgotPassword(formData.email);
+
+                    if (!result.success) {
+                      setError(result.error || 'Failed to send reset email.');
+                    } else {
+                      setError('');
+                      alert('Password reset email sent! Check your inbox.');
+                    }
+
+                    setLoading(false);
+                  }}
+                  className="text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            )}
+
+            {!isLogin && (
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-gray-800 font-semibold text-sm mb-2"
+                >
+                  Confirm Password
+                </label>
+
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+
+                  <input
+                    id="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    aria-invalid={!!fieldErrors.confirmPassword}
+                    aria-describedby={
+                      fieldErrors.confirmPassword
+                        ? 'confirmPassword-error'
+                        : undefined
+                    }
+                    className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+                    placeholder="Confirm your password"
+                    aria-label="Confirm Password"
+                    required={!isLogin}
+                  />
+                </div>
+
+                {fieldErrors.confirmPassword && (
+                  <p
+                    id="confirmPassword-error"
+                    role="alert"
+                    className="text-red-300 text-sm mt-2"
+                  >
+                    {fieldErrors.confirmPassword}
+                  </p>
+                )}
+              </div>
+            )}
+            
+
+                    {error && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               role="alert"
               aria-live="polite"
-              className="bg-red-50 border-2 border-red-300 text-red-800 p-3 rounded-xl text-sm font-medium"
+              className="bg-red-50 border-2 border-red-300 text-red-800 p-3 rounded-xl text-sm font-medium whitespace-pre-line"
             >
               {error}
             </motion.div>
@@ -464,9 +487,40 @@ const Auth = () => {
           </motion.button>
         </form>
 
+        <div className="mt-6 pt-6 border-t-2 border-gray-200">
+          <p className="text-gray-700 font-medium text-center">
+            {isLogin ? "Don't have an account?" : 'Already have an account?'}
+          </p>
+
+          <button
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError('');
+              setFieldErrors({
+                email: '',
+                password: '',
+                name: '',
+                confirmPassword: ''
+              });
+
+              setFormData({
+                email: '',
+                password: '',
+                name: '',
+                confirmPassword: ''
+              });
+            }}
+            className="w-full text-green-600 hover:text-green-700 font-semibold mt-3 transition-colors py-2 rounded-lg hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500"
+            aria-label={isLogin ? 'Switch to sign up' : 'Switch to sign in'}
+          >
+            {isLogin ? 'Sign up here' : 'Sign in here'}
+          </button>
+        </div>
+
         {/* Toggle - HIGH CONTRAST FOOTER TEXT */}
         <div className="mt-6 pt-6 border-t-2 border-gray-200">
           <p className="text-gray-700 font-medium text-center">
+
             {isLogin ? "Don't have an account?" : 'Already have an account?'}
           </p>
           <button
@@ -481,9 +535,9 @@ const Auth = () => {
           >
             {isLogin ? 'Sign up here' : 'Sign in here'}
           </button>
-        </div>
-      </motion.div>
-    </div>
+        </div >
+      </motion.div >
+    </div >
   );
 };
 
