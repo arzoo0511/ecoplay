@@ -158,12 +158,11 @@ export const dbFunctions = {
 
   // Game Score functions
   async saveGameScore(score: Omit<GameScore, 'id' | 'created_at'>): Promise<boolean> {
-    const { error } = await supabase
-      .from('game_scores')
-      .insert([{
-        ...score,
-        created_at: new Date().toISOString()
-      }]);
+    const { error } = await supabase.rpc('save_game_score_secure', {
+      p_game_type: score.game_type,
+      p_score: score.score,
+      p_trash_collected: score.trash_collected ?? 0
+    });
     
     if (error) {
       console.error('Error saving game score:', error);
