@@ -18,6 +18,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGamification } from '../hooks/useGamification';
+import { RecommendedChallenges } from '../components/RecommendedChallenges';
+
 
 // ─── XP Panel Component ───────────────────────────────────────
 
@@ -95,6 +97,17 @@ const XPPanel: React.FC<{ authUser: any }> = ({ authUser }) => {
               >
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-yellow-300 w-6">#{entry.rank}</span>
+                  {entry.avatarUrl ? (
+                    <img
+                      src={entry.avatarUrl}
+                      alt={entry.username}
+                      className="w-6 h-6 rounded-full object-cover border border-white/20"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white font-bold border border-white/15">
+                      {entry.username.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
                   <span className="text-sm text-white truncate max-w-[80px]">{entry.username}</span>
                 </div>
                 <div className="text-right">
@@ -132,8 +145,33 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
 
-  const [challenges, setChallenges] = React.useState(dailyChallenges);
-  React.useEffect(() => setChallenges(dailyChallenges), [dailyChallenges]);
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    if (!state.lastChallengeRefresh) return;
+    
+    const updateTimer = () => {
+      const now = Date.now();
+      const nextRefresh = state.lastChallengeRefresh + 24 * 60 * 60 * 1000;
+      const diff = nextRefresh - now;
+      
+      if (diff <= 0) {
+        setTimeLeft('00:00:00');
+        return;
+      }
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      const pad = (num: number) => String(num).padStart(2, '0');
+      setTimeLeft(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [state.lastChallengeRefresh]);
 
   const useCounter = (end: number, duration: number = 2000) => {
     const [count, setCount] = useState(0);
@@ -158,7 +196,7 @@ const Dashboard = () => {
   const calculateEcoScore = () => {
     const villageScore = (ecoVillage.airQuality + ecoVillage.waterQuality + ecoVillage.biodiversity) / 3;
     const activityScore = Math.min(100, (gameStats.totalTrashCollected / 10) + (ecoVillage.trees / 2));
-    const completionScore = (challenges.filter(c => c.completed).length / challenges.length) * 100;
+    const completionScore = dailyChallenges.length ? (dailyChallenges.filter(c => c.completed).length / dailyChallenges.length) * 100 : 0;
     return Math.round((villageScore * 0.4) + (activityScore * 0.3) + (completionScore * 0.3));
   };
 
@@ -170,26 +208,37 @@ const Dashboard = () => {
 
   const routeFor = (text: string) => {
     const t = text.toLowerCase();
-    if (t.includes('cleanup') || t.includes('ocean')) return '/OceanCleanupGame';
-    if (t.includes('water') || t.includes('tree') || t.includes('eco')) return '/EcoVillage';
-    if (t.includes('learn') || t.includes('course') || t.includes('video')) return '/Learn';
-    if (t.includes('event')) return '/Events';
-    if (t.includes('community')) return '/Community';
-    return '/EcoVillage';
+    if (t.includes('cleanup') || t.includes('ocean')) return '/ocean-cleanup-game';
+    if (t.includes('water') || t.includes('tree') || t.includes('eco')) return '/eco-village';
+    if (t.includes('learn') || t.includes('course') || t.includes('video')) return '/learn';
+    if (t.includes('event')) return '/events';
+    if (t.includes('community')) return '/community';
+    return '/eco-village';
   };
 
   const startChallenge = (title: string) => navigate(routeFor(title));
 
   const addProgress = (id: string, delta = 20) => {
-    setChallenges(prev =>
-      prev.map(c => {
-        if (c.id !== id || c.completed) return c;
-        const next = Math.min(100, (c.progress ?? 0) + delta);
-        const justCompleted = next >= 100;
-        if (justCompleted) dispatch?.({ type: 'ADD_POINTS', payload: c.points });
-        return { ...c, progress: next, completed: justCompleted };
-      })
-    );
+    const challenge = dailyChallenges.find(c => c.id === id);
+    if (!challenge || challenge.completed) return;
+
+    const nextProgress = Math.min(100, (challenge.progress ?? 0) + delta);
+    const justCompleted = nextProgress >= 100;
+
+    dispatch?.({
+      type: 'UPDATE_CHALLENGE',
+      payload: {
+        id,
+        data: {
+          progress: nextProgress,
+          completed: justCompleted
+        }
+      }
+    });
+
+    if (justCompleted) {
+      dispatch?.({ type: 'ADD_POINTS', payload: challenge.points, activityType: 'daily_challenge' });
+    }
   };
 
   const stats = [
@@ -368,15 +417,21 @@ const Dashboard = () => {
 
         {/* Daily Challenges */}
         <motion.div variants={itemVariants} className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+          <h2 className="text-2xl font-bold text-white mb-2 flex items-center">
             <TbTarget className="h-6 w-6 text-orange-400 mr-2" />
             Daily Challenges
             <span className="ml-auto text-sm text-blue-200">
-              {challenges.filter(c => c.completed).length}/{challenges.length} complete
+              {dailyChallenges.filter(c => c.completed).length}/{dailyChallenges.length} complete
             </span>
           </h2>
+          {timeLeft && (
+            <p className="text-xs text-orange-300 font-semibold mb-6 flex items-center gap-1">
+              <span>⏱️ Next refresh in:</span>
+              <span className="font-mono bg-white/5 px-2 py-0.5 rounded border border-white/10">{timeLeft}</span>
+            </p>
+          )}
           <div className="space-y-4">
-            {challenges.map((challenge) => (
+            {dailyChallenges.map((challenge) => (
               <motion.div
                 key={challenge.id}
                 whileHover={{ scale: 1.02 }}
@@ -454,6 +509,11 @@ const Dashboard = () => {
             View All Challenges
           </motion.button>
         </motion.div>
+      </div>
+
+      {/* Recommended Challenges */}
+      <div className="mt-8">
+        <RecommendedChallenges />
       </div>
 
       {/* XP / Streak / Leaderboard Panel */}

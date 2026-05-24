@@ -19,7 +19,10 @@ export interface LeaderboardPage {
 // ─── Supabase RPC: get_leaderboard ───────────────────────────
 // Call this ONCE in Supabase SQL editor to register the function:
 //
-// CREATE OR REPLACE FUNCTION get_leaderboard(p_limit INT, p_offset INT)
+// CREATE OR REPLACE FUNCTION get_leaderboard(
+//   p_limit INT DEFAULT 10,
+//   p_offset INT DEFAULT 0
+// )
 // RETURNS TABLE (
 //   rank          BIGINT,
 //   user_id       UUID,
@@ -28,17 +31,17 @@ export interface LeaderboardPage {
 //   total_xp      BIGINT,
 //   current_level INT,
 //   current_streak INT
-// ) LANGUAGE SQL STABLE AS $$
+// ) LANGUAGE SQL STABLE SECURITY DEFINER AS $$
 //   SELECT
 //     DENSE_RANK() OVER (ORDER BY s.total_xp DESC) AS rank,
 //     s.user_id,
-//     p.username,
-//     p.avatar_url,
+//     COALESCE(u.name, 'Anonymous') AS username,
+//     u.avatar_url,
 //     s.total_xp,
 //     s.current_level,
 //     COALESCE(str.current_streak, 0) AS current_streak
 //   FROM user_stats s
-//   JOIN profiles    p   ON p.id      = s.user_id
+//   LEFT JOIN users u ON u.id = s.user_id
 //   LEFT JOIN user_streaks str ON str.user_id = s.user_id
 //   ORDER BY s.total_xp DESC
 //   LIMIT  p_limit

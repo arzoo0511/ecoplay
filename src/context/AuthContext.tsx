@@ -17,6 +17,7 @@ function toAppUser(supabaseUser: any): User {
       supabaseUser.user_metadata?.name ||
       supabaseUser.email?.split("@")[0] ||
       "Player",
+    avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
   };
 }
 

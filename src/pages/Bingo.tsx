@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { Award, X, CheckCircle, Trophy, Target, Zap } from 'lucide-react';
+import { dbFunctions } from '../lib/supabase';
 
 type SDGGoal = {
     title: string;
@@ -16,8 +17,6 @@ type CompletionState = {
         tasks: [boolean, boolean, boolean];
     };
 };
-
-const STORAGE_KEY = 'ecoplay-bingo-progress';
 
 const sdgGoals: SDGGoal[] = [
     {
@@ -276,19 +275,16 @@ const Bingo = () => {
     const { dispatch } = useGame();
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
-    const [completionState, setCompletionState] = useState<CompletionState>(() => {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            return saved ? JSON.parse(saved) : {};
-        } catch {
-            return {};
-        }
-    });
+    const [completionState, setCompletionState] = useState<CompletionState>({});
     const modalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(completionState));
-    }, [completionState]);
+        const fetchState = async () => {
+            const state = await dbFunctions.getBingoProgress();
+            setCompletionState(state as CompletionState);
+        };
+        fetchState();
+    }, []);
 
     useEffect(() => {
         if (selectedIndex === null) return;
@@ -346,24 +342,31 @@ const Bingo = () => {
         return Math.floor(total * completed / 3);
     };
 
-    const toggleTask = (goalIndex: number, taskIndex: number) => {
+    const toggleTask = async (goalIndex: number, taskIndex: number) => {
         const goalState = completionState[goalIndex];
         const wasChecked = goalState?.tasks[taskIndex] ?? false;
 
-        if (!wasChecked) {
-            const total = sdgGoals[goalIndex].points;
-            const taskPoints = taskIndex === 2
-                ? total - Math.floor(total / 3) * 2
-                : Math.floor(total / 3);
-            dispatch({ type: 'ADD_POINTS', payload: taskPoints });
-        }
+        if (wasChecked) return; // Mission already completed securely
 
+        const total = sdgGoals[goalIndex].points;
+        const taskPoints = taskIndex === 2
+            ? total - Math.floor(total / 3) * 2
+            : Math.floor(total / 3);
+            
+        // Optimistic UI updates
+        dispatch({ type: 'ADD_POINTS', payload: taskPoints });
         setCompletionState(prev => {
             const prevGoal = prev[goalIndex] || { tasks: [false, false, false] as [boolean, boolean, boolean] };
             const newTasks = [...prevGoal.tasks] as [boolean, boolean, boolean];
-            newTasks[taskIndex] = !newTasks[taskIndex];
+            newTasks[taskIndex] = true;
             return { ...prev, [goalIndex]: { tasks: newTasks } };
         });
+
+        // Backend Sync
+        const newState = await dbFunctions.toggleBingoMission(goalIndex, taskIndex);
+        if (newState) {
+            setCompletionState(newState as CompletionState);
+        }
     };
 
     const cx = 300, cy = 300, r = 300;
@@ -610,7 +613,7 @@ const Bingo = () => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6"
+                            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6"
                             onClick={() => setSelectedIndex(null)}
                         >
                             <motion.div

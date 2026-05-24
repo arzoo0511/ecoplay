@@ -2,6 +2,8 @@ import React from 'react';
 import { useAuth } from './AuthContext';
 import { loadState, saveState } from '../services/persistence';
 import { awardXP } from '../lib/gamification';
+import { initPreferences, RecommendedChallenge } from '../services/recommendation';
+
 
 // Define your GameState shape (example – adapt to your existing state)
 export interface GameState {
@@ -29,11 +31,37 @@ export interface GameState {
     progress: number;
     completed: boolean;
   }[];
+  recommendedChallenges?: RecommendedChallenge[];
+  categoryPreferences?: Record<string, number>;
+  lastRecommendationsRefresh?: number;
   gameStats: {
     totalTrashCollected: number;
     perfectCleanups: number;
   };
   notifications: string[];
+  lastChallengeRefresh: number;
+}
+
+export const CHALLENGE_POOL = [
+  { title: 'Plant a Tree', description: 'Add a tree to your eco village.', points: 50 },
+  { title: 'Collect Ocean Trash', description: 'Play a cleanup round.', points: 40 },
+  { title: 'Learn Sustain', description: 'Watch an educational video in the Learn section.', points: 30 },
+  { title: 'Solar Upgrade', description: 'Install a solar panel in your village.', points: 60 },
+  { title: 'Pure Water', description: 'Install a water filter in your village.', points: 45 },
+  { title: 'Eco Post', description: 'Create a post in the community board.', points: 25 },
+  { title: 'Quiz Whiz', description: 'Complete a sustainability quiz.', points: 35 },
+];
+
+export function generateDailyChallenges(seedTime: number = Date.now()): GameState['dailyChallenges'] {
+  const shuffled = [...CHALLENGE_POOL].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, 3).map((c, i) => ({
+    id: `c_${seedTime}_${i}`,
+    title: c.title,
+    description: c.description,
+    points: c.points,
+    progress: 0,
+    completed: false,
+  }));
 }
 
 const initialState: GameState = {
@@ -53,29 +81,16 @@ const initialState: GameState = {
     inventory: [],
     landscape: []
   },
-  dailyChallenges: [
-    {
-      id: 'c1',
-      title: 'Plant a Tree',
-      description: 'Add a tree to your eco village.',
-      points: 50,
-      progress: 0,
-      completed: false
-    },
-    {
-      id: 'c2',
-      title: 'Collect Ocean Trash',
-      description: 'Play a cleanup round.',
-      points: 40,
-      progress: 0,
-      completed: false
-    }
-  ],
+  dailyChallenges: [],
+  recommendedChallenges: [],
+  categoryPreferences: initPreferences(),
+  lastRecommendationsRefresh: 0,
   gameStats: {
     totalTrashCollected: 0,
     perfectCleanups: 0
   },
-  notifications: []
+  notifications: [],
+  lastChallengeRefresh: 0
 };
 
 type GameContextValue = {
@@ -152,6 +167,30 @@ function reducer(state: GameState, action: any): GameState {
           c.id === action.payload.id ? { ...c, ...action.payload.data } : c
         )
       };
+    case 'REFRESH_CHALLENGES':
+      return {
+        ...state,
+        dailyChallenges: action.payload.challenges,
+        lastChallengeRefresh: action.payload.lastChallengeRefresh
+      };
+    case 'UPDATE_RECOMMENDED_CHALLENGE':
+      return {
+        ...state,
+        recommendedChallenges: (state.recommendedChallenges || []).map(c =>
+          c.id === action.payload.id ? { ...c, ...action.payload.data } : c
+        )
+      };
+    case 'REFRESH_RECOMMENDATIONS':
+      return {
+        ...state,
+        recommendedChallenges: action.payload.challenges,
+        lastRecommendationsRefresh: action.payload.lastRecommendationsRefresh
+      };
+    case 'UPDATE_PREFERENCES':
+      return {
+        ...state,
+        categoryPreferences: action.payload
+      };
     case 'UPDATE_ECO_VILLAGE':
       return {
         ...state,
@@ -176,7 +215,12 @@ function reducer(state: GameState, action: any): GameState {
         }
       };
     case 'HYDRATE':
-      return { ...state, ...action.payload };
+      return {
+        ...state,
+        ...action.payload,
+        categoryPreferences: action.payload.categoryPreferences || state.categoryPreferences || initPreferences(),
+        recommendedChallenges: action.payload.recommendedChallenges || state.recommendedChallenges || []
+      };
     default:
       return state;
   }
@@ -190,12 +234,49 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     const loaded = loadState(user.id);
     if (loaded) {
-      dispatchBase({ type: 'HYDRATE', payload: loaded });
+      let finalPayload = loaded;
+      const now = Date.now();
+      const lastRefresh = loaded.lastChallengeRefresh || 0;
+      if (now - lastRefresh >= 24 * 60 * 60 * 1000) {
+        finalPayload = {
+          ...loaded,
+          dailyChallenges: generateDailyChallenges(now),
+          lastChallengeRefresh: now
+        };
+      }
+      dispatchBase({ type: 'HYDRATE', payload: finalPayload });
       setTimeout(() => dispatchBase({ type: 'SIMULATE_TIME' }), 100);
     } else {
-      dispatchBase({ type: 'HYDRATE', payload: { ...initialState, user: { ...initialState.user, name: user.name } } });
+      const now = Date.now();
+      dispatchBase({
+        type: 'HYDRATE',
+        payload: {
+          ...initialState,
+          user: { ...initialState.user, name: user.name },
+          dailyChallenges: generateDailyChallenges(now),
+          lastChallengeRefresh: now
+        }
+      });
     }
   }, [user]);
+
+  const lastRefresh = state.lastChallengeRefresh;
+  React.useEffect(() => {
+    if (!user || !lastRefresh) return;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      if (now - lastRefresh >= 24 * 60 * 60 * 1000) {
+        dispatchBase({
+          type: 'REFRESH_CHALLENGES',
+          payload: {
+            challenges: generateDailyChallenges(now),
+            lastChallengeRefresh: now
+          }
+        });
+      }
+    }, 15000); // Check every 15 seconds
+    return () => clearInterval(interval);
+  }, [user, lastRefresh]);
 
   React.useEffect(() => {
     if (!user) return;

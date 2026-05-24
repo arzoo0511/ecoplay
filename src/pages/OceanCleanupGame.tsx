@@ -49,6 +49,11 @@ const OceanCleanupGame = () => {
 
   // Guard: ensures final score is committed to GameContext exactly once per round.
   const hasCommittedScoreRef = useRef(false);
+  const scoreRef = useRef(score);
+  const totalCollectedRef = useRef(totalCollected);
+
+  useEffect(() => { scoreRef.current = score; }, [score]);
+  useEffect(() => { totalCollectedRef.current = totalCollected; }, [totalCollected]);
 
   const trashTypes = {
     bottle: { points: 10, color: 'bg-blue-400', emoji: '🍶' },
@@ -211,24 +216,27 @@ const OceanCleanupGame = () => {
   const endGame = useCallback(() => {
     setGameActive(false);
 
+    const finalScore = scoreRef.current;
+    const finalCollected = totalCollectedRef.current;
+
     // Commit final round score to GameContext exactly once per round.
-    if (score > 0 && !hasCommittedScoreRef.current) {
+    if (finalScore > 0 && !hasCommittedScoreRef.current) {
       hasCommittedScoreRef.current = true;
-      dispatch({ type: 'ADD_POINTS', payload: score });
+      dispatch({ type: 'ADD_POINTS', payload: finalScore });
     }
 
     dispatch({
       type: 'UPDATE_OCEAN_STATS',
       payload: {
-        totalTrashCollected: (state.gameStats?.totalTrashCollected || 0) + totalCollected,
+        totalTrashCollected: (state.gameStats?.totalTrashCollected || 0) + finalCollected,
         perfectCleanups: state.gameStats?.perfectCleanups || 0
       }
     });
 
-    if (score > 500) {
+    if (finalScore > 500) {
       setLevel(prev => prev + 1);
     }
-  }, [dispatch, score, totalCollected, state.gameStats]);
+  }, [dispatch, state.gameStats]);
 
   // Timer tick
   useEffect(() => {
