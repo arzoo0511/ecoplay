@@ -67,15 +67,6 @@ export const AuthProvider: React.FC<{
       });
 
       if (error) {
-        const message = error.message.toLowerCase();
-
-        if (message.includes("failed to fetch")) {
-          return {
-            success: false,
-            error: "Unable to connect to authentication server.",
-          };
-        }
-
         return { success: false, error: error.message };
       }
 
@@ -141,22 +132,6 @@ export const AuthProvider: React.FC<{
       });
 
       if (error) {
-        const message = error.message.toLowerCase();
-
-        if (message.includes("invalid login credentials")) {
-          return {
-            success: false,
-            error: "Incorrect email or password.",
-          };
-        }
-
-        if (message.includes("failed to fetch")) {
-          return {
-            success: false,
-            error: "Unable to connect to authentication server.",
-          };
-        }
-
         return { success: false, error: error.message };
       }
 
