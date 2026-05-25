@@ -22,6 +22,46 @@ const PageLoader = () => (
   </div>
 );
 
+/** Catches dynamic-import failures and shows a friendly message. */
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="text-red-600 font-semibold text-xl">
+            Something went wrong while loading this page. Please refresh and try again.
+          </p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/**
+ * Wraps a lazy route element in a per-route ErrorBoundary + Suspense pair.
+ * This means each route gets its own loading fallback and error isolation.
+ */
+const withLazyBoundary = (element: React.ReactNode) => (
+  <ErrorBoundary>
+    <Suspense fallback={<PageLoader />}>
+      {element}
+    </Suspense>
+  </ErrorBoundary>
+);
+
 /**
  * Protects routes that require authentication.
  * Shows a loading indicator while the Supabase session is being restored
@@ -49,25 +89,23 @@ export default function App() {
       <AuthProvider>
         <GameProvider>
           <BrowserRouter>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                {/* Public routes */}
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<Auth />} />
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={withLazyBoundary(<LandingPage />)} />
+              <Route path="/login" element={<Auth />} />
 
-                {/* Protected routes */}
-                <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
-                <Route path="/ocean-cleanup-game" element={<Protected><OceanCleanupGame /></Protected>} />
-                <Route path="/eco-village" element={<Protected><EcoVillage /></Protected>} />
-                <Route path="/learn" element={<Protected><Learn /></Protected>} />
-                <Route path="/bingo" element={<Protected><Bingo /></Protected>} />
-                <Route path="/community" element={<Protected><Community /></Protected>} />
-                <Route path="/events" element={<Protected><Events /></Protected>} />
+              {/* Protected routes */}
+              <Route path="/dashboard" element={withLazyBoundary(<Protected><Dashboard /></Protected>)} />
+              <Route path="/ocean-cleanup-game" element={withLazyBoundary(<Protected><OceanCleanupGame /></Protected>)} />
+              <Route path="/eco-village" element={withLazyBoundary(<Protected><EcoVillage /></Protected>)} />
+              <Route path="/learn" element={withLazyBoundary(<Protected><Learn /></Protected>)} />
+              <Route path="/bingo" element={withLazyBoundary(<Protected><Bingo /></Protected>)} />
+              <Route path="/community" element={withLazyBoundary(<Protected><Community /></Protected>)} />
+              <Route path="/events" element={withLazyBoundary(<Protected><Events /></Protected>)} />
 
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-              </Routes>
-            </Suspense>
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
           </BrowserRouter>
         </GameProvider>
       </AuthProvider>
