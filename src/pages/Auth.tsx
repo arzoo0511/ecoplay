@@ -231,22 +231,22 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-green-50">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 w-full max-w-md"
+        className="bg-white rounded-2xl border-2 border-gray-200 shadow-2xl p-8 w-full max-w-md"
       >
         {/* Header */}
         <div className="text-center mb-8">
           <motion.div
             whileHover={{ rotate: 360 }}
             transition={{ duration: 0.8 }}
-            className="bg-green-500 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center"
+            className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-lg"
           >
             <Leaf className="h-8 w-8 text-white" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             {isLogin ? 'Welcome Back!' : 'Join EcoPlay'}
           </h1>
           {/* HIGH CONTRAST SUBTITLE - WCAG AAA Compliant (7.5:1+) */}
@@ -279,7 +279,7 @@ const Auth = () => {
                 />
               </div>
               {fieldErrors.name && (
-                <p id="name-error" role="alert" className="text-red-300 text-sm mt-2">
+                <p id="name-error" role="alert" className="text-red-600 text-sm mt-2">
                   {fieldErrors.name}
                 </p>
               )}
@@ -307,7 +307,7 @@ const Auth = () => {
               />
             </div>
             {fieldErrors.email && (
-              <p id="email-error" role="alert" className="text-red-300 text-sm mt-2" >
+              <p id="email-error" role="alert" className="text-red-600 text-sm mt-2">
                 {fieldErrors.email}
               </p>
             )}
@@ -327,24 +327,24 @@ const Auth = () => {
                 onChange={handleInputChange}
                 aria-invalid={!!fieldErrors.password}
                 aria-describedby={fieldErrors.password ? 'password-error' : undefined}
-                className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+                className="w-full pl-10 pr-12 py-3 bg-white border-2 border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
                 placeholder="Enter your password"
                 aria-label="Password"
                 required
               />
               <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 rounded p-1 transition-colors"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
+  type="button"
+  onClick={() => setShowPassword(!showPassword)}
+  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 rounded p-1 transition-colors"
+  aria-label={showPassword ? 'Hide password' : 'Show password'}
+>
+  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+</button>
             </div>
 
             {!isLogin && formData.password && (
               <div className="mt-2">
-                <p className="text-sm text-gray-300">
+                <p className="text-sm text-gray-600">
                   Password Strength:
                   <span
                     className={`ml-2 font-semibold ${
@@ -362,7 +362,7 @@ const Auth = () => {
             )}
 
             {fieldErrors.password && (
-              <p id="password-error" role="alert" className="text-red-300 text-sm mt-2">
+              <p id="password-error" role="alert" className="text-red-600 text-sm mt-2">
                 {fieldErrors.password}
               </p>
             )}
@@ -420,7 +420,7 @@ const Auth = () => {
                 />
               </div>
               {fieldErrors.confirmPassword && (
-                <p id="confirmPassword-error" role="alert" className="text-red-300 text-sm mt-2">
+                <p id="confirmPassword-error" role="alert" className="text-red-600 text-sm mt-2">
                   {fieldErrors.confirmPassword}
                 </p>
               )}
@@ -439,6 +439,7 @@ const Auth = () => {
             </motion.div>
           )}
 
+          {/* SMOOTH GRADIENT - Properly centered text */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -458,7 +459,7 @@ const Auth = () => {
                   !!fieldErrors.confirmPassword
                 ))
             }
-            className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-3 px-6 rounded-xl hover:from-green-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 text-white font-bold py-3 px-6 rounded-xl hover:from-green-600 hover:via-emerald-600 hover:to-green-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center"
           >
             {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
           </motion.button>

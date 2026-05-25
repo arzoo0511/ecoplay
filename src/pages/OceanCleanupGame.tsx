@@ -27,6 +27,14 @@ interface Fish {
   direction: number;
 }
 
+const TRASH_TYPES = {
+  bottle: { points: 10, color: 'bg-blue-400', emoji: '🍶' },
+  can: { points: 15, color: 'bg-gray-400', emoji: '🥤' },
+  bag: { points: 20, color: 'bg-green-400', emoji: '🛍️' },
+  tire: { points: 50, color: 'bg-black', emoji: '🛞' },
+  oil: { points: 100, color: 'bg-yellow-600', emoji: '🛢️' }
+} as const;
+
 const OceanCleanupGame = () => {
   const { state, dispatch } = useGame();
   const [gameActive, setGameActive] = useState(false);
@@ -55,17 +63,9 @@ const OceanCleanupGame = () => {
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { totalCollectedRef.current = totalCollected; }, [totalCollected]);
 
-  const trashTypes = {
-    bottle: { points: 10, color: 'bg-blue-400', emoji: '🍶' },
-    can: { points: 15, color: 'bg-gray-400', emoji: '🥤' },
-    bag: { points: 20, color: 'bg-green-400', emoji: '🛍️' },
-    tire: { points: 50, color: 'bg-black', emoji: '🛞' },
-    oil: { points: 100, color: 'bg-yellow-600', emoji: '🛢️' }
-  };
-
   // Generate single trash item
   const generateSingleTrash = useCallback(() => {
-    const types = Object.keys(trashTypes) as (keyof typeof trashTypes)[];
+    const types = Object.keys(TRASH_TYPES) as (keyof typeof TRASH_TYPES)[];
     const type = types[Math.floor(Math.random() * types.length)];
     
     return {
@@ -73,7 +73,7 @@ const OceanCleanupGame = () => {
       x: Math.random() * 80 + 10,
       y: Math.random() * 70 + 15,
       type,
-      points: trashTypes[type].points,
+      points: TRASH_TYPES[type].points,
       size: type === 'tire' ? 40 : type === 'oil' ? 35 : 25,
     };
   }, []);
@@ -386,7 +386,7 @@ const OceanCleanupGame = () => {
           {/* Trash Items */}
           <AnimatePresence>
             {trash.map((item) => {
-              const trashStyle = trashTypes[item.type];
+              const trashStyle = TRASH_TYPES[item.type];
               
               return (
                 <motion.div
