@@ -237,15 +237,38 @@ ALTER TABLE badges            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE level_thresholds  ENABLE ROW LEVEL SECURITY;
 
 -- Public read-only tables
+DROP POLICY IF EXISTS "public_read_xp_config" ON xp_config;
 CREATE POLICY "public_read_xp_config"       ON xp_config       FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "public_read_badges" ON badges;
 CREATE POLICY "public_read_badges"          ON badges           FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "public_read_level_thresholds" ON level_thresholds;
 CREATE POLICY "public_read_level_thresholds" ON level_thresholds FOR SELECT USING (true);
 
 -- Users can only read/write their own rows
+DROP POLICY IF EXISTS "own_streaks" ON user_streaks;
 CREATE POLICY "own_streaks"     ON user_streaks FOR ALL USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "own_xp_ledger" ON xp_ledger;
 CREATE POLICY "own_xp_ledger"   ON xp_ledger    FOR ALL USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "own_stats" ON user_stats;
 CREATE POLICY "own_stats"       ON user_stats   FOR ALL USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "own_badges" ON user_badges;
 CREATE POLICY "own_badges"      ON user_badges  FOR ALL USING (auth.uid() = user_id);
 
 -- Leaderboard: everyone can read stats (for rankings), but only owners write
+DROP POLICY IF EXISTS "leaderboard_read" ON user_stats;
 CREATE POLICY "leaderboard_read" ON user_stats  FOR SELECT USING (true);
+
+-- ─── 7. BINGO PROGRESS ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS bingo_progress (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  state JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE bingo_progress ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own bingo progress" ON bingo_progress FOR SELECT USING (auth.uid() = user_id);

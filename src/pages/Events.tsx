@@ -113,12 +113,10 @@ const Events = () => {
   const toggleJoin = (id: string) => {
     setEvents((prevEvents) =>
       prevEvents.map((event) => {
-        if (event.id === id) {
-          const newParticipants = event.isJoined ? event.participants - 1 : event.participants + 1;
-          return { ...event, isJoined: !event.isJoined, participants: newParticipants };
-        }
-
-        return event;
+        if (event.id !== id) return event;
+        if (!event.isJoined && event.participants >= event.maxParticipants) return event;
+        const newParticipants = event.isJoined ? event.participants - 1 : event.participants + 1;
+        return { ...event, isJoined: !event.isJoined, participants: newParticipants };
       })
     );
   };
@@ -177,6 +175,11 @@ const Events = () => {
             <div className="relative h-48">
               <img src={event.image} alt={event.title} className="h-full w-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
+              {!event.isJoined && event.participants >= event.maxParticipants && (
+                <div className="absolute top-4 right-4 rounded-full bg-red-500 px-3 py-1 text-xs font-bold uppercase text-white">
+                  Full
+                </div>
+              )}
               <div className="absolute bottom-4 left-4 right-4">
                 <h3 className="text-xl font-bold text-white">{event.title}</h3>
                 <div className="mb-2 flex items-center text-sm text-white/80">
@@ -202,16 +205,19 @@ const Events = () => {
 
               <div className="flex flex-wrap gap-3">
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={!event.isJoined && event.participants >= event.maxParticipants ? {} : { scale: 1.05 }}
+                  whileTap={!event.isJoined && event.participants >= event.maxParticipants ? {} : { scale: 0.95 }}
                   onClick={() => toggleJoin(event.id)}
+                  disabled={!event.isJoined && event.participants >= event.maxParticipants}
                   className={
                     event.isJoined
                       ? 'flex-1 rounded-xl bg-green-100 px-4 py-3 font-semibold text-green-900 transition-theme duration-300 dark:border dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300'
-                      : `flex-1 ${primaryButton}`
+                      : !event.isJoined && event.participants >= event.maxParticipants
+                        ? 'flex-1 rounded-xl bg-white/5 px-4 py-3 font-semibold text-slate-400 cursor-not-allowed opacity-60 dark:text-slate-500'
+                        : `flex-1 ${primaryButton}`
                   }
                 >
-                  {event.isJoined ? 'Joined' : 'Join Event'}
+                  {event.isJoined ? 'Joined' : event.participants >= event.maxParticipants ? 'Event Full' : 'Join Event'}
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.05 }}

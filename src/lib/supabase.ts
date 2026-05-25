@@ -1,22 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+export const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Database types
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  points: number;
-  level: number;
-  eco_score: number;
-  badges: string[];
-  created_at: string;
-  updated_at: string;
-}
+// // Database types
+// export interface User {
+//   id: string;
+//   email: string;
+//   name: string;
+//   avatar_url?: string | null;
+//   points: number;
+//   level: number;
+//   eco_score: number;
+//   badges: string[];
+//   created_at: string;
+//   updated_at: string;
+// }
 
 export interface EcoVillage {
   id: string;
@@ -157,12 +159,11 @@ export const dbFunctions = {
 
   // Game Score functions
   async saveGameScore(score: Omit<GameScore, 'id' | 'created_at'>): Promise<boolean> {
-    const { error } = await supabase
-      .from('game_scores')
-      .insert([{
-        ...score,
-        created_at: new Date().toISOString()
-      }]);
+    const { error } = await supabase.rpc('save_game_score_secure', {
+      p_game_type: score.game_type,
+      p_score: score.score,
+      p_trash_collected: score.trash_collected ?? 0
+    });
     
     if (error) {
       console.error('Error saving game score:', error);
@@ -254,6 +255,67 @@ export const dbFunctions = {
     }
     
     return true;
+  },
+
+
+  async updateCommunityPostLikes(postId: string, increment: boolean): Promise<boolean> {
+    const { error } = await supabase.rpc('increment_post_likes', {
+      p_post_id: postId,
+      p_increment: increment
+    });
+    
+    if (error) {
+      console.error('Error updating post likes:', error);
+      return false;
+    }
+    
+    return true;
+  },
+
+  async addCommunityPostReply(postId: string): Promise<boolean> {
+    const { error } = await supabase.rpc('increment_post_replies', {
+      p_post_id: postId
+    });
+    
+    if (error) {
+      console.error('Error updating post replies:', error);
+      return false;
+    }
+    
+    return true;
+  },
+
+  // Bingo Progress Functions
+  async getBingoProgress(): Promise<Record<number, { tasks: [boolean, boolean, boolean] }>> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return {};
+
+    const { data, error } = await supabase
+      .from('bingo_progress')
+      .select('state')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 is row not found
+      console.error('Error fetching bingo progress:', error);
+      return {};
+    }
+
+    return data?.state || {};
+  },
+
+  async toggleBingoMission(goalIndex: number, taskIndex: number): Promise<Record<number, { tasks: [boolean, boolean, boolean] }> | null> {
+    const { data, error } = await supabase.rpc('toggle_bingo_mission', {
+      p_goal_index: goalIndex,
+      p_task_index: taskIndex
+    });
+
+    if (error) {
+      console.error('Error toggling bingo mission:', error);
+      return null;
+    }
+
+    return data;
   },
 
   // Events functions

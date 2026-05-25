@@ -17,6 +17,7 @@ function toAppUser(supabaseUser: any): User {
       supabaseUser.user_metadata?.name ||
       supabaseUser.email?.split("@")[0] ||
       "Player",
+    avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
   };
 }
 
@@ -66,6 +67,15 @@ export const AuthProvider: React.FC<{
       });
 
       if (error) {
+        const message = error.message.toLowerCase();
+
+        if (message.includes("failed to fetch")) {
+          return {
+            success: false,
+            error: "Unable to connect to authentication server.",
+          };
+        }
+
         return { success: false, error: error.message };
       }
 
@@ -131,6 +141,22 @@ export const AuthProvider: React.FC<{
       });
 
       if (error) {
+        const message = error.message.toLowerCase();
+
+        if (message.includes("invalid login credentials")) {
+          return {
+            success: false,
+            error: "Incorrect email or password.",
+          };
+        }
+
+        if (message.includes("failed to fetch")) {
+          return {
+            success: false,
+            error: "Unable to connect to authentication server.",
+          };
+        }
+
         return { success: false, error: error.message };
       }
 
@@ -143,6 +169,23 @@ export const AuthProvider: React.FC<{
       console.error("[Auth] Login error:", err);
       return { success: false, error: "An unexpected error occurred." };
     }
+  };
+
+  const forgotPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email.trim().toLowerCase(),
+      {
+        redirectTo: `${window.location.origin}/reset-password`,
+      }
+    );
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return {
+      success: true,
+    };
   };
 
   const logout = async (): Promise<void> => {
@@ -161,6 +204,7 @@ export const AuthProvider: React.FC<{
         loading,
         login,
         register,
+        forgotPassword,
         logout,
       }}
     >

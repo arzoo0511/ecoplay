@@ -2,6 +2,7 @@ export interface User {
     id: string;
     name: string;
     email: string;
+    avatarUrl?: string | null;
 }
 
 export interface AuthResponse {
@@ -14,6 +15,12 @@ export interface AuthContextType {
     user: User | null;
     loading: boolean;
     login: (email: string, password: string) => Promise<AuthResponse>;
+    forgotPassword: (
+            email: string
+            ) => Promise<{
+            success: boolean;
+            error?: string;
+    }>;
     register: (
         name: string,
         email: string,

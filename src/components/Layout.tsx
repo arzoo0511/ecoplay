@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import AnimatedBackground from './AnimatedBackground';
+import EcoChatbot from './EcoChatbot';
 import Navbar from './Navbar';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -17,6 +18,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <main className="relative z-10 px-4 pb-16 pt-20 sm:px-6 lg:px-8">
         {children}
       </main>
+
+      {!isLogin && <EcoChatbot />}
     </div>
   );
 };
