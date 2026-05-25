@@ -1,23 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+export const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Database types
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  avatar_url?: string | null;
-  points: number;
-  level: number;
-  eco_score: number;
-  badges: string[];
-  created_at: string;
-  updated_at: string;
-}
+// // Database types
+// export interface User {
+//   id: string;
+//   email: string;
+//   name: string;
+//   avatar_url?: string | null;
+//   points: number;
+//   level: number;
+//   eco_score: number;
+//   badges: string[];
+//   created_at: string;
+//   updated_at: string;
+// }
 
 export interface EcoVillage {
   id: string;

@@ -137,9 +137,50 @@ const XPPanel: React.FC<{ authUser: any }> = ({ authUser }) => {
   );
 };
 
+
+
 // ─── Main Dashboard ───────────────────────────────────────────
 
 const Dashboard = () => {
+
+   const achievementBadges = [
+  {
+    id: 1,
+    name: "Eco Beginner",
+    icon: "🌱",
+    required: 0,
+    color: "from-green-400 to-emerald-500",
+  },
+  {
+    id: 2,
+    name: "Ocean Saver",
+    icon: "🌊",
+    required: 100,
+    color: "from-blue-400 to-cyan-500",
+  },
+  {
+    id: 3,
+    name: "Tree Guardian",
+    icon: "🌳",
+    required: 250,
+    color: "from-lime-400 to-green-500",
+  },
+  {
+    id: 4,
+    name: "Recycling Hero",
+    icon: "♻️",
+    required: 500,
+    color: "from-yellow-400 to-orange-500",
+  },
+  {
+    id: 5,
+    name: "Eco Champion",
+    icon: "🏆",
+    required: 1000,
+    color: "from-purple-400 to-pink-500",
+  },
+];
+
   const { state, dispatch } = useGame();
   const { user, ecoVillage, dailyChallenges, gameStats } = state;
   const navigate = useNavigate();
@@ -511,10 +552,61 @@ const Dashboard = () => {
         </motion.div>
       </div>
 
-      {/* Recommended Challenges */}
-      <div className="mt-8">
-        <RecommendedChallenges />
-      </div>
+      {/* Achievement Badges */}
+<motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5 }}
+  className="mt-8 bg-white/10 backdrop-blur-lg rounded-3xl p-6 border border-white/20 shadow-xl"
+>
+  <div className="flex items-center gap-2 mb-6">
+    <TbAward className="text-yellow-400 text-2xl" />
+    <h2 className="text-2xl font-bold text-white">
+      Achievement Badges
+    </h2>
+  </div>
+
+  <p className="text-white/60 mb-6">
+    Unlock badges by completing eco challenges and missions!
+  </p>
+
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+    {achievementBadges.map((badge) => {
+      const unlocked = (user?.points || 0) >= badge.required;
+
+      return (
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          key={badge.id}
+          className={`rounded-2xl p-5 text-center transition-all duration-300 ${
+            unlocked
+              ? `bg-gradient-to-r ${badge.color} text-white shadow-lg`
+              : "bg-white/5 text-gray-300 border border-white/10"
+          }`}
+        >
+          <div className="text-5xl mb-3">
+            {badge.icon}
+          </div>
+
+          <h3 className="font-bold text-lg mb-2">
+            {badge.name}
+          </h3>
+
+          <p className="text-sm opacity-90">
+            {unlocked
+              ? "Unlocked 🎉"
+              : `${badge.required} points needed`}
+          </p>
+        </motion.div>
+      );
+    })}
+  </div>
+</motion.div>
+
+{/* Recommended Challenges */}
+<div className="mt-8">
+  <RecommendedChallenges />
+</div>
 
       {/* XP / Streak / Leaderboard Panel */}
       <XPPanel authUser={authUser} />
