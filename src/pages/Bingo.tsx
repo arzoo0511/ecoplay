@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { Award, X, CheckCircle, Trophy, Target, Zap } from 'lucide-react';
 import { dbFunctions } from '../lib/supabase';
+import { addPendingWrite } from '../lib/offline/offlineStore';
+import { safeSupabase } from '../lib/supabaseClient';
 
 type SDGGoal = {
     title: string;
@@ -280,8 +282,20 @@ const Bingo = () => {
 
     useEffect(() => {
         const fetchState = async () => {
-            const state = await dbFunctions.getBingoProgress();
-            setCompletionState(state as CompletionState);
+            const result = await safeSupabase(async () => {
+                const data = await dbFunctions.getBingoProgress();
+                return {
+                    data,
+                    error: null,
+                };
+            });
+
+            if (result.offline || result.error) {
+                console.log('Unable to fetch bingo progress:', result.error ?? 'Network error');
+                return;
+            }
+
+            setCompletionState((result.data || {}) as CompletionState);
         };
         fetchState();
     }, []);
@@ -345,6 +359,8 @@ const Bingo = () => {
     const toggleTask = async (goalIndex: number, taskIndex: number) => {
         const goalState = completionState[goalIndex];
         const wasChecked = goalState?.tasks[taskIndex] ?? false;
+        const missionId = { goalIndex, taskIndex };
+        const newChecked = true;
 
         if (wasChecked) return; // Mission already completed securely
 
@@ -363,9 +379,21 @@ const Bingo = () => {
         });
 
         // Backend Sync
-        const newState = await dbFunctions.toggleBingoMission(goalIndex, taskIndex);
-        if (newState) {
-            setCompletionState(newState as CompletionState);
+        const result = await safeSupabase(async () => {
+            const data = await dbFunctions.toggleBingoMission(goalIndex, taskIndex);
+            return {
+                data,
+                error: data === null ? { message: 'Unable to sync bingo mission' } : null,
+            };
+        });
+
+        if (result.offline || result.error) {
+            addPendingWrite('bingo', { missionId, newChecked, goalIndex, taskIndex });
+            return;
+        }
+
+        if (result.data) {
+            setCompletionState(result.data as CompletionState);
         }
     };
 

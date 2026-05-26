@@ -1,14 +1,25 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { AuthContextType, AuthResponse, User } from "../types/auth";
-import { clearState } from "../services/persistence";
+import { clearState, loadState, saveState } from "../services/persistence";
+import {
+  clearGuestState,
+  enterGuestMode,
+  exitGuestMode,
+  getGuestId,
+  hasGuestState,
+  isGuestMode,
+} from "../lib/guest";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * Maps a raw Supabase Auth user to the app's lightweight User shape.
- * Name is stored in user_metadata.name when the account is created.
- */
+const guestUser: User = {
+  id: getGuestId(),
+  email: "",
+  name: "Guest",
+  avatarUrl: null,
+};
+
 function toAppUser(supabaseUser: any): User {
   return {
     id: supabaseUser.id,
@@ -24,25 +35,35 @@ function toAppUser(supabaseUser: any): User {
 export const AuthProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() =>
+    isGuestMode() ? guestUser : null
+  );
   const [loading, setLoading] = useState(true);
+  const [supabaseError, setSupabaseError] = useState<string | null>(null);
+  const [isGuest, setIsGuest] = useState<boolean>(isGuestMode());
+  const [showMergePrompt, setShowMergePrompt] = useState(false);
 
   useEffect(() => {
-    // Restore existing session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ? toAppUser(session.user) : null);
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setUser(session?.user ? toAppUser(session.user) : isGuestMode() ? guestUser : null);
+        setLoading(false);
+      })
+      .catch(() => {
+        setSupabaseError(
+          "Unable to connect to Supabase. Some features may be unavailable."
+        );
+        setLoading(false);
+      });
 
-    // Keep state in sync with Supabase session events
-    // (sign-in, sign-out, token refresh, etc.)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(toAppUser(session.user));
       } else {
-        setUser(null);
+        setUser(isGuestMode() ? guestUser : null);
       }
       setLoading(false);
     });
@@ -73,11 +94,10 @@ export const AuthProvider: React.FC<{
       if (!data.user) {
         return {
           success: false,
-          error: "Registration failed — please try again.",
+          error: "Registration failed - please try again.",
         };
       }
 
-      // Create the user profile row in the public users table
       const { error: profileError } = await supabase.from("users").insert([
         {
           id: data.user.id,
@@ -90,11 +110,9 @@ export const AuthProvider: React.FC<{
       ]);
 
       if (profileError) {
-        // Non-fatal: profile creation can fail on email-confirmation flows
         console.warn("[Auth] Profile insert error:", profileError.message);
       }
 
-      // Create the initial eco village row
       const { error: villageError } = await supabase
         .from("eco_villages")
         .insert([
@@ -136,14 +154,80 @@ export const AuthProvider: React.FC<{
       }
 
       if (!data.user) {
-        return { success: false, error: "Login failed — please try again." };
+        return { success: false, error: "Login failed - please try again." };
       }
 
-      return { success: true, user: toAppUser(data.user) };
+      const loggedInUser = toAppUser(data.user);
+      setUser(loggedInUser);
+
+      if (hasGuestState()) {
+        setShowMergePrompt(true);
+      } else {
+        exitGuestMode();
+        setIsGuest(false);
+      }
+
+      return { success: true, user: loggedInUser };
     } catch (err: any) {
       console.error("[Auth] Login error:", err);
       return { success: false, error: "An unexpected error occurred." };
     }
+  };
+
+  const enterGuest = (): void => {
+    enterGuestMode();
+    setIsGuest(true);
+    setUser(guestUser);
+  };
+
+  const exitGuest = (): void => {
+    exitGuestMode();
+    setIsGuest(false);
+    setShowMergePrompt(false);
+    setUser((currentUser) =>
+      currentUser?.id === guestUser.id ? null : currentUser
+    );
+  };
+
+  const confirmMerge = (): void => {
+    if (!user || user.id === guestUser.id) {
+      return;
+    }
+
+    const guestState = loadState(guestUser.id);
+    const userState = loadState(user.id);
+    const guestPoints = guestState?.user?.points ?? 0;
+    const userPoints = userState?.user?.points ?? 0;
+    const mergedBase =
+      guestPoints >= userPoints
+        ? guestState ?? userState
+        : userState ?? guestState;
+
+    if (mergedBase) {
+      saveState({
+        userId: user.id,
+        state: {
+          ...mergedBase,
+          user: {
+            ...(mergedBase.user ?? {}),
+            name: user.name,
+            points: Math.max(guestPoints, userPoints),
+          },
+        },
+      });
+    }
+
+    clearGuestState();
+    exitGuest();
+    setShowMergePrompt(false);
+    window.location.assign("/dashboard");
+  };
+
+  const skipMerge = (): void => {
+    clearGuestState();
+    exitGuest();
+    setShowMergePrompt(false);
+    window.location.assign("/dashboard");
   };
 
   const logout = async (): Promise<void> => {
@@ -152,7 +236,6 @@ export const AuthProvider: React.FC<{
     }
     await supabase.auth.signOut();
     setUser(null);
-    // onAuthStateChange also fires and sets user → null for safety
   };
 
   return (
@@ -160,8 +243,15 @@ export const AuthProvider: React.FC<{
       value={{
         user,
         loading,
+        supabaseError,
+        isGuest,
+        showMergePrompt,
         login,
         register,
+        enterGuest,
+        exitGuest,
+        confirmMerge,
+        skipMerge,
         logout,
       }}
     >
@@ -170,6 +260,7 @@ export const AuthProvider: React.FC<{
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
