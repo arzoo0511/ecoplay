@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
 import { GameState } from '../context/GameContext';
 
@@ -270,8 +271,8 @@ export function generateRecommendations(
   const sorted = scoredTemplates.sort((a, b) => b.score - a.score);
   
   // Return the top 3 formatted recommendations
-  return sorted.slice(0, 3).map((item, index) => ({
-    id: `rec_${Date.now()}_${index}`,
+  return sorted.slice(0, 3).map((item) => ({
+    id: `rec_${uuidv4()}`,
     title: item.template.title,
     description: item.template.description,
     points: item.points,

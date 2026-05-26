@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Award, Clock, MessageCircle, Plus, Reply, Search, Share2, ThumbsUp } from 'lucide-react';
@@ -197,7 +198,7 @@ const Community = () => {
 
   const handleSubmitPost = (e: React.FormEvent) => {
     e.preventDefault();
-    const id = Date.now().toString();
+    const id = uuidv4();
 
     setPosts((prev) => [
       {

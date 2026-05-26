@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from "framer-motion";
 import { useGame } from "../context/GameContext";
 import {
@@ -196,7 +197,7 @@ const EcoVillage = () => {
     ).getBoundingClientRect();
 
     const newEffect = {
-      id: Date.now(),
+      id: uuidv4(),
       x: rect.left + rect.width / 2,
       y: rect.top,
     };

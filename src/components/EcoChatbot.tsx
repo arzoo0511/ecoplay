@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Leaf, MessageCircle, Send, X } from 'lucide-react';
 import { inputClass, modalPanel, primaryButton } from '../lib/ui';
@@ -102,7 +103,7 @@ const EcoChatbot = () => {
 
     const pendingText = inputText;
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: uuidv4(),
       text: pendingText,
       isUser: true,
       timestamp: new Date()
@@ -114,7 +115,7 @@ const EcoChatbot = () => {
 
     setTimeout(() => {
       const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
+        id: uuidv4(),
         text: findBestResponse(pendingText),
         isUser: false,
         timestamp: new Date()

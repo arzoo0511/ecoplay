@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { 
@@ -70,7 +71,7 @@ const OceanCleanupGame = () => {
     const type = types[Math.floor(Math.random() * types.length)];
     
     return {
-      id: `trash-${Date.now()}-${Math.random()}`,
+      id: `trash-${uuidv4()}`,
       x: Math.random() * 80 + 10,
       y: Math.random() * 70 + 15,
       type,
