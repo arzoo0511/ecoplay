@@ -1,9 +1,16 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import ConfigErrorScreen from './components/status/ConfigErrorScreen';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GameProvider } from './context/GameContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { validateEnv } from './config/validateEnv';
 import Layout from './components/Layout';
+import useSyncStatus from './hooks/useSyncStatus';
+import MergePrompt from './components/status/MergePrompt';
+import OfflineBanner from './components/status/OfflineBanner';
+
+import Auth from './pages/Auth';
 
 // Lazy load the heavy page components to split the JS bundle
 const Auth = lazy(() => import('./pages/Auth'));
@@ -22,7 +29,7 @@ const OceanCleanupGame = lazy(() => import('./pages/OceanCleanupGame'));
  * to prevent a flash of redirect on page refresh.
  */
 const Protected: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isGuest } = useAuth();
 
   if (loading) {
     return (
@@ -32,10 +39,44 @@ const Protected: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     );
   }
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user && !isGuest) return <Navigate to="/login" replace />;
 
   return <Layout>{children}</Layout>;
 };
+const AppRoutes = () => {
+    const { supabaseError } = useAuth();
+    const { pendingCount, isSyncing } = useSyncStatus();
+    const bannerMessage = `${supabaseError ?? ''}${isSyncing ? ' Syncing...' : ''}`;
+
+    return (
+      <>
+        <OfflineBanner
+          visible={!!supabaseError}
+          message={bannerMessage}
+          pendingCount={pendingCount}
+        />
+        <BrowserRouter>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Auth />} />
+
+            {/* Protected routes */}
+            <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
+            <Route path="/ocean-cleanup-game" element={<Protected><OceanCleanupGame /></Protected>} />
+            <Route path="/eco-village" element={<Protected><EcoVillage /></Protected>} />
+            <Route path="/learn" element={<Protected><Learn /></Protected>} />
+            <Route path="/bingo" element={<Protected><Bingo /></Protected>} />
+            <Route path="/community" element={<Protected><Community /></Protected>} />
+            <Route path="/events" element={<Protected><Events /></Protected>} />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </>
+    );
+  };
 
 // Shared loading fallback for lazy-loaded chunks
 const PageLoader = () => (
@@ -45,32 +86,20 @@ const PageLoader = () => (
 );
 
 export default function App() {
+  const envStatus = validateEnv();
+
+  if (!envStatus.valid) {
+    return <ConfigErrorScreen missing={envStatus.missing} />;
+  }
+
+  
+
   return (
     <ThemeProvider>
       <AuthProvider>
         <GameProvider>
-          <BrowserRouter>
-            {/* Suspense boundary manages the loading state while chunks are fetched over the network */}
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                {/* Public routes */}
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<Auth />} />
-
-                {/* Protected routes */}
-                <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
-                <Route path="/ocean-cleanup-game" element={<Protected><OceanCleanupGame /></Protected>} />
-                <Route path="/eco-village" element={<Protected><EcoVillage /></Protected>} />
-                <Route path="/learn" element={<Protected><Learn /></Protected>} />
-                <Route path="/bingo" element={<Protected><Bingo /></Protected>} />
-                <Route path="/community" element={<Protected><Community /></Protected>} />
-                <Route path="/events" element={<Protected><Events /></Protected>} />
-
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
+          <MergePrompt />
+          <AppRoutes />
         </GameProvider>
       </AuthProvider>
     </ThemeProvider>

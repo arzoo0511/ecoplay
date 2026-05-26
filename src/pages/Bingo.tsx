@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { Award, X, CheckCircle, Trophy, Target, Zap } from 'lucide-react';
 import { dbFunctions } from '../lib/supabase';
-import { toast } from '../lib/ui';
+import { addPendingWrite } from '../lib/offline/offlineStore';
+import { safeSupabase } from '../lib/supabaseClient';
 
 type SDGGoal = {
     title: string;
@@ -281,8 +282,20 @@ const Bingo = () => {
 
     useEffect(() => {
         const fetchState = async () => {
-            const state = await dbFunctions.getBingoProgress();
-            setCompletionState(state as CompletionState);
+            const result = await safeSupabase(async () => {
+                const data = await dbFunctions.getBingoProgress();
+                return {
+                    data,
+                    error: null,
+                };
+            });
+
+            if (result.offline || result.error) {
+                console.log('Unable to fetch bingo progress:', result.error ?? 'Network error');
+                return;
+            }
+
+            setCompletionState((result.data || {}) as CompletionState);
         };
         fetchState();
     }, []);
@@ -346,6 +359,8 @@ const Bingo = () => {
    const toggleTask = async (goalIndex: number, taskIndex: number) => {
         const goalState = completionState[goalIndex];
         const wasChecked = goalState?.tasks[taskIndex] ?? false;
+        const missionId = { goalIndex, taskIndex };
+        const newChecked = true;
 
         if (wasChecked) return; // Mission already completed securely
 
@@ -363,31 +378,22 @@ const Bingo = () => {
             return { ...prev, [goalIndex]: { tasks: newTasks } };
         });
 
-        // 2. Backend Sync with Try/Catch Fallback
-        try {
-            const newState = await dbFunctions.toggleBingoMission(goalIndex, taskIndex);
-            if (newState) {
-                setCompletionState(newState as CompletionState);
-            } else {
-                throw new Error("Failed to sync with server");
-            }
-        } catch (error) {
-            console.error("Bingo Sync Error:", error);
-            
-            // 3. REVERT ON FAILURE
-            toast.error("Network error: Failed to claim Bingo square. Reverting points.");
-            
-            // Revert points in context
-            dispatch({ type: 'REMOVE_POINTS', payload: taskPoints }); 
-            
-            // Revert local bingo board UI state
-            setCompletionState(prev => {
-                const prevGoal = prev[goalIndex];
-                if (!prevGoal) return prev;
-                const newTasks = [...prevGoal.tasks] as [boolean, boolean, boolean];
-                newTasks[taskIndex] = false;
-                return { ...prev, [goalIndex]: { tasks: newTasks } };
-            });
+        // Backend Sync
+        const result = await safeSupabase(async () => {
+            const data = await dbFunctions.toggleBingoMission(goalIndex, taskIndex);
+            return {
+                data,
+                error: data === null ? { message: 'Unable to sync bingo mission' } : null,
+            };
+        });
+
+        if (result.offline || result.error) {
+            addPendingWrite('bingo', { missionId, newChecked, goalIndex, taskIndex });
+            return;
+        }
+
+        if (result.data) {
+            setCompletionState(result.data as CompletionState);
         }
     };
 

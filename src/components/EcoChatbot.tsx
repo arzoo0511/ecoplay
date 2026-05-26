@@ -12,6 +12,13 @@ interface Message {
 
 const EcoChatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showPulse, setShowPulse] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowPulse(false), 4500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -126,13 +133,21 @@ const EcoChatbot = () => {
   };
 
   return (
-    <>
+    <motion.div
+      initial={{ y: 20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay: 1, duration: 0.5, ease: 'easeOut' }}
+    >
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? 'Close chatbot' : 'Open sustainability chatbot'}
         className="fixed bottom-6 right-6 z-50 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 p-4 text-white shadow-lg shadow-emerald-500/30 transition-all duration-300 hover:shadow-xl"
       >
+        {!isOpen && showPulse && (
+          <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400/30" />
+        )}
         <AnimatePresence mode="wait">
           {isOpen ? (
             <motion.div
@@ -259,7 +274,7 @@ const EcoChatbot = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </motion.div>
   );
 };
 
