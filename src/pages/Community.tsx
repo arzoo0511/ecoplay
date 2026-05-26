@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+
 import {
   Award,
   Clock,
@@ -16,14 +17,17 @@ import {
   Send,
   HelpCircle,
 } from 'lucide-react';
+
 import { useAuth } from '../context/AuthContext';
 import { useGame } from '../context/GameContext';
+
 import {
   dbFunctions,
   supabase,
   CommunityPost,
   CommunityReply,
 } from '../lib/supabase';
+
 import {
   chipBase,
   glassCard,
@@ -103,7 +107,7 @@ const StatsSkeleton = () => (
 
 const Community = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
   const { dispatch } = useGame();
 
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -728,6 +732,25 @@ const Community = () => {
         return 'border-gray-400/30 bg-gray-500/20 text-gray-500 dark:border-white/10 dark:text-slate-300';
     }
   };
+
+
+  if (isGuest) {
+    return (
+      <div className={`${pageShell} min-h-screen flex items-center justify-center`}>
+        <div className="w-full max-w-xl rounded-2xl border border-white/20 bg-white/90 p-8 text-center shadow-2xl dark:bg-white/5">
+          <h1 className="text-3xl font-bold text-sky-950 dark:text-white">
+            Community features are available to registered users.
+          </h1>
+          <button
+            onClick={() => navigate('/login')}
+            className={`${primaryButton} mt-6 justify-center`}
+          >
+            Sign In to Continue
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div

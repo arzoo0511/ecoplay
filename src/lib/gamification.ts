@@ -239,7 +239,7 @@ async function checkAndAwardBadges(
   return candidates;
 }
 
-// ─── Stats Fetchers ───────────────────────────────────────────
+// --- Stats Fetchers ---
 
 export async function getUserStats(userId: string): Promise<UserStats | null> {
   const { data, error } = await supabase
@@ -260,10 +260,10 @@ export async function getUserStats(userId: string): Promise<UserStats | null> {
   }
 
   return {
-    userId:          data.user_id,
-    totalXP:         data.total_xp,
-    currentLevel:    data.current_level,
-    xpToNextLevel:   data.xp_to_next_level,
+    userId: data.user_id,
+    totalXP: data.total_xp,
+    currentLevel: data.current_level,
+    xpToNextLevel: data.xp_to_next_level,
     activitiesCount: data.activities_count,
   };
 }
@@ -295,9 +295,10 @@ export async function getUserBadges(userId: string) {
       console.warn('[EcoPlay] user_badges table query failed:', error);
       return [];
     }
+
     return data ?? [];
   } catch (err) {
-    console.warn('[EcoPlay] Exception fetching user badges:', err);
+    console.error('[EcoPlay] getUserBadges crashed:', err);
     return [];
   }
 }

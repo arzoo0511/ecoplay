@@ -1,14 +1,25 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { AuthContextType, AuthResponse, User } from "../types/auth";
-import { clearState } from "../services/persistence";
+import { clearState, loadState, saveState } from "../services/persistence";
+import {
+  clearGuestState,
+  enterGuestMode,
+  exitGuestMode,
+  getGuestId,
+  hasGuestState,
+  isGuestMode,
+} from "../lib/guest";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * Maps a raw Supabase Auth user to the app's lightweight User shape.
- * Name is stored in user_metadata.name when the account is created.
- */
+const guestUser: User = {
+  id: getGuestId(),
+  email: "",
+  name: "Guest",
+  avatarUrl: null,
+};
+
 function toAppUser(supabaseUser: any): User {
   return {
     id: supabaseUser.id,
@@ -24,87 +35,108 @@ function toAppUser(supabaseUser: any): User {
 export const AuthProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() =>
+    isGuestMode() ? guestUser : null
+  );
   const [loading, setLoading] = useState(true);
+  const [supabaseError, setSupabaseError] = useState<string | null>(null);
+  const [isGuest, setIsGuest] = useState<boolean>(isGuestMode());
+  const [showMergePrompt, setShowMergePrompt] = useState(false);
 
-  useEffect(() => {
-    const ensureUserProfileExists = async (supabaseUser: any) => {
-      try {
-        const { data: profile, error: profileErr } = await supabase
-          .from("users")
-          .select("id")
-          .eq("id", supabaseUser.id)
-          .maybeSingle();
+useEffect(() => {
+  const ensureUserProfileExists = async (supabaseUser: any) => {
+    try {
+      const { data: profile, error: profileErr } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", supabaseUser.id)
+        .maybeSingle();
 
-        if (!profileErr && !profile) {
-          console.log("[EcoPlay] Public profile missing. Creating on-the-fly...");
-          await supabase.from("users").insert([
-            {
-              id: supabaseUser.id,
-              email: supabaseUser.email || "",
-              name: supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "EcoPlayer",
-              points: 0,
-              level: 1,
-              eco_score: 0,
-              avatar_url: supabaseUser.user_metadata?.avatar_url || null
-            },
-          ]);
-        }
+      if (!profileErr && !profile) {
+        console.log("[EcoPlay] Public profile missing. Creating on-the-fly...");
 
-        const { data: village, error: villageErr } = await supabase
-          .from("eco_villages")
-          .select("id")
-          .eq("user_id", supabaseUser.id)
-          .maybeSingle();
-
-        if (!villageErr && !village) {
-          console.log("[EcoPlay] Eco village record missing. Initializing on-the-fly...");
-          await supabase.from("eco_villages").insert([
-            {
-              user_id: supabaseUser.id,
-              air_quality: 20,
-              water_quality: 20,
-              biodiversity: 10,
-              trees: 0,
-              solar_panels: 0,
-              water_filters: 0,
-              pollution_level: 80,
-            },
-          ]);
-        }
-      } catch (err) {
-        console.error("[EcoPlay] Error self-healing profile:", err);
+        await supabase.from("users").insert([
+          {
+            id: supabaseUser.id,
+            email: supabaseUser.email || "",
+            name:
+              supabaseUser.user_metadata?.name ||
+              supabaseUser.email?.split("@")[0] ||
+              "EcoPlayer",
+            points: 0,
+            level: 1,
+            eco_score: 0,
+            avatar_url: supabaseUser.user_metadata?.avatar_url || null,
+          },
+        ]);
       }
-    };
 
-    // Restore existing session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
+      const { data: village, error: villageErr } = await supabase
+        .from("eco_villages")
+        .select("id")
+        .eq("user_id", supabaseUser.id)
+        .maybeSingle();
+
+      if (!villageErr && !village) {
+        console.log(
+          "[EcoPlay] Eco village record missing. Initializing on-the-fly..."
+        );
+
+        await supabase.from("eco_villages").insert([
+          {
+            user_id: supabaseUser.id,
+            air_quality: 20,
+            water_quality: 20,
+            biodiversity: 10,
+            trees: 0,
+            solar_panels: 0,
+            water_filters: 0,
+            pollution_level: 80,
+          },
+        ]);
+      }
+    } catch (err) {
+      console.error("[EcoPlay] Error self-healing profile:", err);
+    }
+  };
+
+  supabase.auth
+    .getSession()
+    .then(({ data: { session } }) => {
       if (session?.user) {
         setUser(toAppUser(session.user));
         ensureUserProfileExists(session.user);
       } else {
-        setUser(null);
+        setUser(isGuestMode() ? guestUser : null);
       }
+
+      setLoading(false);
+    })
+    .catch(() => {
+      setSupabaseError(
+        "Unable to connect to Supabase. Some features may be unavailable."
+      );
+
       setLoading(false);
     });
 
-    // Keep state in sync with Supabase session events
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser(toAppUser(session.user));
-        ensureUserProfileExists(session.user);
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((_event, session) => {
+    if (session?.user) {
+      setUser(toAppUser(session.user));
+      ensureUserProfileExists(session.user);
+    } else {
+      setUser(isGuestMode() ? guestUser : null);
+    }
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+    setLoading(false);
+  });
+
+  return () => {
+    subscription.unsubscribe();
+  };
+}, []);
 
   const register = async (
     name: string,
@@ -112,7 +144,6 @@ export const AuthProvider: React.FC<{
     password: string
   ): Promise<AuthResponse> => {
     try {
-      // Step 1: Create authentication account
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
@@ -122,26 +153,16 @@ export const AuthProvider: React.FC<{
       });
 
       if (error) {
-        const message = error.message.toLowerCase();
-
-        if (message.includes("failed to fetch")) {
-          return {
-            success: false,
-            error: "Unable to connect to authentication server.",
-          };
-        }
-
         return { success: false, error: error.message };
       }
 
       if (!data.user) {
         return {
           success: false,
-          error: "Registration failed — please try again.",
+          error: "Registration failed - please try again.",
         };
       }
 
-      // Step 2: Create user profile
       const { error: profileError } = await supabase.from("users").insert([
         {
           id: data.user.id,
@@ -153,20 +174,10 @@ export const AuthProvider: React.FC<{
         },
       ]);
 
-      // Properly handle profile creation failure
       if (profileError) {
-        console.error(
-          "[Auth] Profile insert failed:",
-          profileError.message
-        );
-
-        return {
-          success: false,
-          error: "Failed to create user profile.",
-        };
+        console.warn("[Auth] Profile insert error:", profileError.message);
       }
 
-      // Step 3: Create eco village
       const { error: villageError } = await supabase
         .from("eco_villages")
         .insert([
@@ -182,37 +193,14 @@ export const AuthProvider: React.FC<{
           },
         ]);
 
-      // Properly handle eco village failure
       if (villageError) {
-        console.error(
-          "[Auth] Village initialization failed:",
-          villageError.message
-        );
-
-        // Rollback user profile creation
-        await supabase
-          .from("users")
-          .delete()
-          .eq("id", data.user.id);
-
-        return {
-          success: false,
-          error: "Failed to initialize eco village.",
-        };
+        console.warn("[Auth] Village insert error:", villageError.message);
       }
 
-      // Success
-      return {
-        success: true,
-        user: toAppUser(data.user),
-      };
+      return { success: true, user: toAppUser(data.user) };
     } catch (err: any) {
       console.error("[Auth] Register error:", err);
-
-      return {
-        success: false,
-        error: "An unexpected error occurred.",
-      };
+      return { success: false, error: "An unexpected error occurred." };
     }
   };
 
@@ -227,70 +215,91 @@ export const AuthProvider: React.FC<{
       });
 
       if (error) {
-        const message = error.message.toLowerCase();
-
-        if (message.includes("invalid login credentials")) {
-          return {
-            success: false,
-            error: "Incorrect email or password.",
-          };
-        }
-
-        if (message.includes("failed to fetch")) {
-          return {
-            success: false,
-            error: "Unable to connect to authentication server.",
-          };
-        }
-
         return { success: false, error: error.message };
       }
 
       if (!data.user) {
-        return {
-          success: false,
-          error: "Login failed — please try again.",
-        };
+        return { success: false, error: "Login failed - please try again." };
       }
 
-      return {
-        success: true,
-        user: toAppUser(data.user),
-      };
+      const loggedInUser = toAppUser(data.user);
+      setUser(loggedInUser);
+
+      if (hasGuestState()) {
+        setShowMergePrompt(true);
+      } else {
+        exitGuestMode();
+        setIsGuest(false);
+      }
+
+      return { success: true, user: loggedInUser };
     } catch (err: any) {
       console.error("[Auth] Login error:", err);
-
-      return {
-        success: false,
-        error: "An unexpected error occurred.",
-      };
+      return { success: false, error: "An unexpected error occurred." };
     }
   };
 
-  const forgotPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(
-      email.trim().toLowerCase(),
-      {
-        redirectTo: `${window.location.origin}/reset-password`,
-      }
-    );
+  const enterGuest = (): void => {
+    enterGuestMode();
+    setIsGuest(true);
+    setUser(guestUser);
+  };
 
-    if (error) {
-      return { success: false, error: error.message };
+  const exitGuest = (): void => {
+    exitGuestMode();
+    setIsGuest(false);
+    setShowMergePrompt(false);
+    setUser((currentUser) =>
+      currentUser?.id === guestUser.id ? null : currentUser
+    );
+  };
+
+  const confirmMerge = (): void => {
+    if (!user || user.id === guestUser.id) {
+      return;
     }
 
-    return {
-      success: true,
-    };
+    const guestState = loadState(guestUser.id);
+    const userState = loadState(user.id);
+    const guestPoints = guestState?.user?.points ?? 0;
+    const userPoints = userState?.user?.points ?? 0;
+    const mergedBase =
+      guestPoints >= userPoints
+        ? guestState ?? userState
+        : userState ?? guestState;
+
+    if (mergedBase) {
+      saveState({
+        userId: user.id,
+        state: {
+          ...mergedBase,
+          user: {
+            ...(mergedBase.user ?? {}),
+            name: user.name,
+            points: Math.max(guestPoints, userPoints),
+          },
+        },
+      });
+    }
+
+    clearGuestState();
+    exitGuest();
+    setShowMergePrompt(false);
+    window.location.assign("/dashboard");
+  };
+
+  const skipMerge = (): void => {
+    clearGuestState();
+    exitGuest();
+    setShowMergePrompt(false);
+    window.location.assign("/dashboard");
   };
 
   const logout = async (): Promise<void> => {
     if (user) {
       clearState(user.id);
     }
-
     await supabase.auth.signOut();
-
     setUser(null);
   };
 
@@ -299,9 +308,15 @@ export const AuthProvider: React.FC<{
       value={{
         user,
         loading,
+        supabaseError,
+        isGuest,
+        showMergePrompt,
         login,
         register,
-        forgotPassword,
+        enterGuest,
+        exitGuest,
+        confirmMerge,
+        skipMerge,
         logout,
       }}
     >
@@ -310,12 +325,11 @@ export const AuthProvider: React.FC<{
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
-
   if (!context) {
     throw new Error("useAuth must be used within AuthProvider");
   }
-
   return context;
 };
