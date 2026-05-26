@@ -405,36 +405,6 @@ const Auth = () => {
             </div>
           )}
 
-          {isLogin && (
-            <div className="flex justify-end -mt-2">
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!formData.email) {
-                    setError('Please enter your email first.');
-                    return;
-                  }
-
-                  setLoading(true);
-
-                  const result = await forgotPassword(formData.email);
-
-                  if (!result.success) {
-                    setError(result.error || 'Failed to send reset email.');
-                  } else {
-                    setError('');
-                    alert('Password reset email sent! Check your inbox.');
-                  }
-
-                  setLoading(false);
-                }}
-                className="text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
-              >
-                Forgot Password?
-              </button>
-            </div>
-          )}
-
           {!isLogin && (
             <div>
               <label htmlFor="confirmPassword" className="block text-gray-800 font-semibold text-sm mb-2">

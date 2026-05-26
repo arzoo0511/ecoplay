@@ -170,7 +170,7 @@ async function checkAndAwardBadges(
     { key: 'knowledge_seeker', met: (activityCounts['learn_video'] ?? 0) >= 10 }
   ];
 
-    for (const { key, met } of conditions) {
+  for (const { key, met } of conditions) {
     if (!alreadyEarned.has(key) && met) {
       candidates.push(key);
     }
