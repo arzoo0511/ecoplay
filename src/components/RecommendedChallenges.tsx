@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
@@ -10,7 +10,6 @@ import {
   syncPreferencesToSupabase,
   saveRecommendedChallengeToDB,
   fetchPreferencesFromSupabase,
-  RecommendedChallenge
 } from '../services/recommendation';
 import {
   TbDroplet,
@@ -23,6 +22,8 @@ import {
   TbFlame,
   TbAlertTriangle
 } from 'react-icons/tb';
+import { addPendingWrite } from '../lib/offline/offlineStore';
+import { safeSupabase } from '../lib/supabaseClient';
 
 export const RecommendedChallenges: React.FC = () => {
   const { state, dispatch } = useGame();
@@ -62,9 +63,9 @@ export const RecommendedChallenges: React.FC = () => {
     ) {
       handleRefresh();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.recommendedChallenges?.length, gamificationLoading, level, currentStreak]);
-
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     setSyncing(true);
     try {
       const recommendations = generateRecommendations(
@@ -86,7 +87,18 @@ export const RecommendedChallenges: React.FC = () => {
     } finally {
       setSyncing(false);
     }
-  };
+  }, [state, level, currentStreak, dispatch]);
+
+  // Generate recommendations if none exist yet
+  useEffect(() => {
+    if (
+      state.recommendedChallenges &&
+      state.recommendedChallenges.length === 0 &&
+      !gamificationLoading
+    ) {
+      handleRefresh();
+    }
+  }, [state.recommendedChallenges, gamificationLoading, handleRefresh]);
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -149,6 +161,20 @@ export const RecommendedChallenges: React.FC = () => {
 
     const nextProgress = Math.min(100, (challenge.progress ?? 0) + delta);
     const justCompleted = nextProgress >= 100;
+    let shouldQueueChallengeWrite = false;
+    const queuedChallengePayload = {
+      challengeId: challenge.id,
+      user_id: authUser?.id,
+      title: challenge.title,
+      description: challenge.description,
+      points: challenge.points,
+      progress: justCompleted ? 100 : nextProgress,
+      completed: justCompleted,
+      is_recommended: true,
+      category: challenge.category,
+      difficulty: challenge.difficulty,
+      recommendation_reason: challenge.reason
+    };
 
     // Update locally in context
     dispatch?.({
@@ -179,22 +205,57 @@ export const RecommendedChallenges: React.FC = () => {
 
       // Sync metadata to Supabase
       if (authUser?.id) {
-        await syncPreferencesToSupabase(authUser.id, updatedPrefs);
-        await saveRecommendedChallengeToDB(authUser.id, {
-          ...challenge,
-          progress: 100,
-          completed: true
+        const prefsResult = await safeSupabase(async () => {
+          const success = await syncPreferencesToSupabase(authUser.id, updatedPrefs);
+          return {
+            data: success,
+            error: success ? null : { message: 'Unable to sync challenge preferences' }
+          };
         });
+
+        if (prefsResult.offline || prefsResult.error) {
+          shouldQueueChallengeWrite = true;
+        }
+
+        const saveResult = await safeSupabase(async () => {
+          const success = await saveRecommendedChallengeToDB(authUser.id, {
+            ...challenge,
+            progress: 100,
+            completed: true
+          });
+          return {
+            data: success,
+            error: success ? null : { message: 'Unable to sync challenge progress' }
+          };
+        });
+
+        if (saveResult.offline || saveResult.error) {
+          shouldQueueChallengeWrite = true;
+        }
       }
     } else {
       // Save partial progress in Supabase if user is logged in
       if (authUser?.id) {
-        await saveRecommendedChallengeToDB(authUser.id, {
-          ...challenge,
-          progress: nextProgress,
-          completed: false
+        const saveResult = await safeSupabase(async () => {
+          const success = await saveRecommendedChallengeToDB(authUser.id, {
+            ...challenge,
+            progress: nextProgress,
+            completed: false
+          });
+          return {
+            data: success,
+            error: success ? null : { message: 'Unable to sync challenge progress' }
+          };
         });
+
+        if (saveResult.offline || saveResult.error) {
+          shouldQueueChallengeWrite = true;
+        }
       }
+    }
+
+    if (shouldQueueChallengeWrite) {
+      addPendingWrite('challenge', queuedChallengePayload);
     }
   };
 
