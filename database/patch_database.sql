@@ -10,6 +10,9 @@
 -- Update users table
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 
+-- Update community_replies table
+ALTER TABLE community_replies ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES community_replies(id) ON DELETE CASCADE;
+
 -- Update community_posts table
 ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS replies INTEGER DEFAULT 0;
 ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS author_name TEXT;
@@ -55,6 +58,7 @@ CREATE TABLE IF NOT EXISTS community_replies (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   post_id UUID REFERENCES community_posts(id) ON DELETE CASCADE NOT NULL,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  parent_id UUID REFERENCES community_replies(id) ON DELETE CASCADE,
   author_name TEXT,
   content TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

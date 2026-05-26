@@ -86,6 +86,7 @@ export interface CommunityReply {
   content: string;
   created_at: string;
   updated_at: string;
+  parent_id?: string | null;
   users?: {
     name: string;
     avatar_url: string | null;
@@ -514,13 +515,14 @@ export const dbFunctions = {
     return data || [];
   },
 
-  async addCommunityPostReply(postId: string, userId: string, content: string) {
+  async addCommunityPostReply(postId: string, userId: string, content: string, parentId?: string | null) {
     let { data, error } = await supabase
       .from('community_replies')
       .insert([{
         post_id: postId,
         user_id: userId,
         content: content,
+        parent_id: parentId || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }])
@@ -558,6 +560,7 @@ export const dbFunctions = {
         post_id: postId,
         user_id: userId,
         content: content,
+        parent_id: parentId || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         users: {
@@ -633,7 +636,23 @@ export const dbFunctions = {
         };
       }
     }
-    return data;
+    
+    if (data) {
+      const typedData = data as any;
+      const members_count = typeof typedData.members_count !== 'undefined' ? typedData.members_count : (typedData.membersCount || 0);
+      const posts_count = typeof typedData.posts_count !== 'undefined' ? typedData.posts_count : (typedData.postsCount || 0);
+      const solved_count = typeof typedData.solved_count !== 'undefined' ? typedData.solved_count : (typedData.solvedCount || 0);
+      const projects_count = typeof typedData.projects_count !== 'undefined' ? typedData.projects_count : (typedData.projectsCount || 0);
+      
+      return {
+        members_count,
+        posts_count,
+        solved_count,
+        projects_count
+      };
+    }
+    
+    return null;
   },
 
   // Bingo Progress Functions

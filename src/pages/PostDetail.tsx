@@ -66,6 +66,8 @@ export default function PostDetail() {
   const [loading, setLoading] = useState(true);
   const [repliesLoading, setRepliesLoading] = useState(true);
   const [replyText, setReplyText] = useState('');
+  const [nestedReplyText, setNestedReplyText] = useState('');
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [submittingReply, setSubmittingReply] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -167,7 +169,8 @@ export default function PostDetail() {
       const { data: addedReply, error: replyErr } = await dbFunctions.addCommunityPostReply(
         post.id,
         user.id,
-        replyText.trim()
+        replyText.trim(),
+        null
       );
 
       if (replyErr) {
@@ -186,6 +189,170 @@ export default function PostDetail() {
     } finally {
       setSubmittingReply(false);
     }
+  };
+
+  const handleNestedReplySubmit = async (e: React.FormEvent, parentId: string) => {
+    e.preventDefault();
+    if (!post || !user || !nestedReplyText.trim() || submittingReply) return;
+
+    setSubmittingReply(true);
+    try {
+      const { data: addedReply, error: replyErr } = await dbFunctions.addCommunityPostReply(
+        post.id,
+        user.id,
+        nestedReplyText.trim(),
+        parentId
+      );
+
+      if (replyErr) {
+        alert(`Failed to post nested reply: ${replyErr.message}`);
+        return;
+      }
+
+      if (addedReply) {
+        setReplies((prev) => [...prev, addedReply]);
+        setPost((prev) => (prev ? { ...prev, replies: prev.replies + 1 } : null));
+        setNestedReplyText('');
+        setReplyingToId(null);
+      }
+    } catch (err: any) {
+      console.error('Error adding nested reply:', err);
+      alert(`An unexpected error occurred: ${err.message || err}`);
+    } finally {
+      setSubmittingReply(false);
+    }
+  };
+
+  interface CommentTreeNode extends CommunityReply {
+    children: CommentTreeNode[];
+  }
+
+  const buildCommentTree = (flatReplies: CommunityReply[]): CommentTreeNode[] => {
+    const replyMap: Record<string, CommentTreeNode> = {};
+    
+    flatReplies.forEach(reply => {
+      replyMap[reply.id] = { ...reply, children: [] };
+    });
+    
+    const roots: CommentTreeNode[] = [];
+    
+    flatReplies.forEach(reply => {
+      const mapped = replyMap[reply.id];
+      if (reply.parent_id && replyMap[reply.parent_id]) {
+        replyMap[reply.parent_id].children.push(mapped);
+      } else {
+        roots.push(mapped);
+      }
+    });
+
+    const sortByDate = (a: CommentTreeNode, b: CommentTreeNode) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+
+    roots.sort(sortByDate);
+    roots.forEach(root => root.children.sort(sortByDate));
+    
+    return roots;
+  };
+
+  const renderCommentNode = (node: CommentTreeNode, depth: number = 0) => {
+    const replyAuthorName = node.users?.name || node.author_name || 'Anonymous';
+    const isReplying = replyingToId === node.id;
+    
+    return (
+      <div key={node.id} className="group/comment space-y-2">
+        {/* Comment Card */}
+        <div className="flex items-start space-x-3 rounded-2xl bg-slate-50/50 p-4 dark:bg-slate-900/40">
+          {node.users?.avatar_url ? (
+            <img
+              src={node.users.avatar_url}
+              alt={replyAuthorName}
+              className="h-8 w-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-green-400 to-blue-500 text-xs font-bold text-white dark:from-emerald-500 dark:to-teal-500">
+              {getInitials(replyAuthorName)}
+            </div>
+          )}
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-sky-950 dark:text-slate-200">
+                {replyAuthorName}
+              </span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-550">
+                {formatRelativeTime(node.created_at)}
+              </span>
+            </div>
+            <p className="mt-1 text-sm leading-relaxed text-sky-950/90 dark:text-slate-300">
+              {node.content}
+            </p>
+            
+            {/* Reply trigger under comment */}
+            {user && (
+              <div className="mt-2 flex items-center space-x-3">
+                <button
+                  onClick={() => {
+                    setReplyingToId(isReplying ? null : node.id);
+                    setNestedReplyText('');
+                  }}
+                  className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 flex items-center gap-1 transition-colors"
+                >
+                  <MessageCircle className="h-3 w-3" />
+                  Reply
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Reply form under the comment */}
+        {isReplying && (
+          <form
+            onSubmit={(e) => handleNestedReplySubmit(e, node.id)}
+            className="pl-6 sm:pl-8 flex items-end space-x-2 mt-2"
+          >
+            <textarea
+              value={nestedReplyText}
+              onChange={(e) => setNestedReplyText(e.target.value)}
+              placeholder={`Reply to ${replyAuthorName}...`}
+              rows={1}
+              required
+              className={`${inputClass} h-9 min-h-[36px] flex-1 resize-none py-1.5 text-sm scrollbar-none`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleNestedReplySubmit(e, node.id);
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setReplyingToId(null)}
+              className="px-3 h-9 text-xs font-bold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!nestedReplyText.trim() || submittingReply}
+              className={`flex h-9 w-9 items-center justify-center rounded-xl text-white transition-all hover:opacity-90 disabled:opacity-50 ${primaryButton}`}
+            >
+              {submittingReply ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Send className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </form>
+        )}
+
+        {/* Indented child replies */}
+        {node.children && node.children.length > 0 && (
+          <div className="pl-4 sm:pl-6 border-l-2 border-slate-200/50 dark:border-white/10 ml-4 space-y-3 mt-2">
+            {node.children.map(child => renderCommentNode(child, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -354,41 +521,8 @@ export default function PostDetail() {
               No comments yet. Be the first to reply!
             </p>
           ) : (
-            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
-              {replies.map((reply) => {
-                const replyAuthorName = reply.users?.name || reply.author_name || 'Anonymous';
-                return (
-                  <div
-                    key={reply.id}
-                    className="flex items-start space-x-3 rounded-2xl bg-slate-50/50 p-4 dark:bg-slate-900/40"
-                  >
-                    {reply.users?.avatar_url ? (
-                      <img
-                        src={reply.users.avatar_url}
-                        alt={replyAuthorName}
-                        className="h-8 w-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-green-400 to-blue-500 text-xs font-bold text-white dark:from-emerald-500 dark:to-teal-500">
-                        {getInitials(replyAuthorName)}
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-sky-950 dark:text-slate-200">
-                          {replyAuthorName}
-                        </span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-500">
-                          {formatRelativeTime(reply.created_at)}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm leading-relaxed text-sky-950/90 dark:text-slate-300">
-                        {reply.content}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin">
+              {buildCommentTree(replies).map((rootNode) => renderCommentNode(rootNode))}
             </div>
           )}
 

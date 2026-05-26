@@ -138,6 +138,8 @@ const Community = () => {
   const [replies, setReplies] = useState<Record<string, CommunityReply[]>>({});
   const [repliesLoading, setRepliesLoading] = useState<Record<string, boolean>>({});
   const [replyText, setReplyText] = useState('');
+  const [nestedReplyText, setNestedReplyText] = useState('');
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [submittingReply, setSubmittingReply] = useState(false);
   const replyInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -482,6 +484,177 @@ const Community = () => {
     }
   };
 
+  const handleNestedReplySubmit = async (e: React.FormEvent, postId: string, parentId: string) => {
+    e.preventDefault();
+    if (!user || !nestedReplyText.trim() || submittingReply) return;
+
+    setSubmittingReply(true);
+    try {
+      const { data: addedReply, error } = await dbFunctions.addCommunityPostReply(
+        postId,
+        user.id,
+        nestedReplyText.trim(),
+        parentId
+      );
+
+      if (error) {
+        alert(`Failed to post nested reply: ${error.message}`);
+        console.error('Error adding reply:', error);
+        return;
+      }
+
+      if (addedReply) {
+        setReplies((prev) => ({
+          ...prev,
+          [postId]: [...(prev[postId] || []), addedReply],
+        }));
+
+        setPosts((prev) =>
+          prev.map((post) =>
+            post.id === postId ? { ...post, replies: post.replies + 1 } : post
+          )
+        );
+
+        setNestedReplyText('');
+        setReplyingToId(null);
+      }
+    } catch (err: any) {
+      console.error('Error adding nested reply:', err);
+      alert(`An unexpected error occurred: ${err.message || err}`);
+    } finally {
+      setSubmittingReply(false);
+    }
+  };
+
+  interface CommentTreeNode extends CommunityReply {
+    children: CommentTreeNode[];
+  }
+
+  const buildCommentTree = (flatReplies: CommunityReply[]): CommentTreeNode[] => {
+    const replyMap: Record<string, CommentTreeNode> = {};
+    
+    flatReplies.forEach(reply => {
+      replyMap[reply.id] = { ...reply, children: [] };
+    });
+    
+    const roots: CommentTreeNode[] = [];
+    
+    flatReplies.forEach(reply => {
+      const mapped = replyMap[reply.id];
+      if (reply.parent_id && replyMap[reply.parent_id]) {
+        replyMap[reply.parent_id].children.push(mapped);
+      } else {
+        roots.push(mapped);
+      }
+    });
+
+    const sortByDate = (a: CommentTreeNode, b: CommentTreeNode) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+
+    roots.sort(sortByDate);
+    roots.forEach(root => root.children.sort(sortByDate));
+    
+    return roots;
+  };
+
+  const renderCommentNode = (node: CommentTreeNode, postId: string, depth: number = 0) => {
+    const replyAuthorName = node.users?.name || node.author_name || 'Anonymous';
+    const isReplying = replyingToId === node.id;
+    
+    return (
+      <div key={node.id} className="group/comment space-y-1.5 mt-2">
+        <div className="flex items-start space-x-2.5 rounded-xl bg-slate-50/70 p-3 dark:bg-slate-900/40">
+          {node.users?.avatar_url ? (
+            <img
+              src={node.users.avatar_url}
+              alt={replyAuthorName}
+              className="h-8 w-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-green-400 to-blue-500 text-xs font-bold text-white dark:from-emerald-500 dark:to-teal-500">
+              {getInitials(replyAuthorName)}
+            </div>
+          )}
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-sky-950 dark:text-slate-200">
+                {replyAuthorName}
+              </span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-500">
+                {formatRelativeTime(node.created_at)}
+              </span>
+            </div>
+            
+            <p className="mt-0.5 text-sm leading-relaxed text-sky-950/90 dark:text-slate-300">
+              {node.content}
+            </p>
+            
+            {user && (
+              <div className="mt-1 flex items-center space-x-3">
+                <button
+                  onClick={() => {
+                    setReplyingToId(isReplying ? null : node.id);
+                    setNestedReplyText('');
+                  }}
+                  className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 flex items-center gap-1 transition-colors"
+                >
+                  <MessageCircle className="h-3 w-3" />
+                  Reply
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {isReplying && (
+          <form
+            onSubmit={(e) => handleNestedReplySubmit(e, postId, node.id)}
+            className="pl-6 sm:pl-8 flex items-end space-x-2 mt-1.5"
+          >
+            <textarea
+              value={nestedReplyText}
+              onChange={(e) => setNestedReplyText(e.target.value)}
+              placeholder={`Reply to ${replyAuthorName}...`}
+              rows={1}
+              required
+              className={`${inputClass} h-9 min-h-[36px] flex-1 resize-none py-1.5 text-sm scrollbar-none`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleNestedReplySubmit(e, postId, node.id);
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setReplyingToId(null)}
+              className="px-2.5 h-9 text-xs font-bold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!nestedReplyText.trim() || submittingReply}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-green-500 to-blue-500 text-white transition-all hover:opacity-90 disabled:opacity-50 dark:from-emerald-500 dark:to-teal-500"
+            >
+              {submittingReply ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Send className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </form>
+        )}
+
+        {node.children && node.children.length > 0 && (
+          <div className="pl-3 sm:pl-4 border-l border-slate-200/50 dark:border-white/5 ml-4 space-y-2 mt-1.5">
+            {node.children.map(child => renderCommentNode(child, postId, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Toggle is_solved status for questions
   const handleToggleSolved = async (postId: string, currentSolved: boolean) => {
     if (!user) return;
@@ -575,10 +748,10 @@ const Community = () => {
       ) : (
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-4">
           {[
-            { label: 'Active Members', value: stats.members_count.toLocaleString(), color: 'text-green-500 dark:text-emerald-400' },
-            { label: 'Total Posts', value: stats.posts_count.toLocaleString(), color: 'text-blue-500 dark:text-sky-400' },
-            { label: 'Solved Questions', value: stats.solved_count.toLocaleString(), color: 'text-purple-500 dark:text-violet-400' },
-            { label: 'Projects Shared', value: stats.projects_count.toLocaleString(), color: 'text-orange-500 dark:text-orange-400' }
+            { label: 'Active Members', value: (stats?.members_count ?? 0).toLocaleString(), color: 'text-green-500 dark:text-emerald-400' },
+            { label: 'Total Posts', value: (stats?.posts_count ?? 0).toLocaleString(), color: 'text-blue-500 dark:text-sky-400' },
+            { label: 'Solved Questions', value: (stats?.solved_count ?? 0).toLocaleString(), color: 'text-purple-500 dark:text-violet-400' },
+            { label: 'Projects Shared', value: (stats?.projects_count ?? 0).toLocaleString(), color: 'text-orange-500 dark:text-orange-400' }
           ].map((stat) => (
             <motion.div
               key={stat.label}
@@ -727,7 +900,10 @@ const Community = () => {
               >
                 {post.title}
               </h2>
-              <p className="mb-4 whitespace-pre-wrap leading-relaxed text-sky-950/85 dark:text-slate-300">
+              <p
+                onClick={() => navigate(`/community/post/${post.id}`)}
+                className="mb-4 whitespace-pre-wrap leading-relaxed text-sky-950/85 dark:text-slate-300 cursor-pointer hover:text-sky-900 dark:hover:text-white transition-colors"
+              >
                 {post.content}
               </p>
 
@@ -766,11 +942,7 @@ const Community = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleToggleReplies(post.id)}
-                    className={`flex items-center space-x-1.5 rounded-xl px-3 py-2 transition-all duration-300 ${
-                      expandedPostId === post.id
-                        ? 'bg-blue-100 text-blue-700 dark:bg-sky-500/20 dark:text-sky-300'
-                        : 'border border-slate-200/80 bg-white/50 text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10'
-                    }`}
+                    className="flex items-center space-x-1.5 rounded-xl border border-slate-200/80 bg-white/50 px-3 py-2 text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
                   >
                     <MessageCircle className="h-4 w-4" />
                     <span className="text-sm font-semibold">{post.replies}</span>
@@ -842,40 +1014,11 @@ const Community = () => {
                             No comments yet. Be the first to reply!
                           </p>
                         ) : (
-                          replies[post.id].map((reply) => {
-                            const replyAuthorName = reply.users?.name || reply.author_name || 'Anonymous';
-                            return (
-                              <div
-                                key={reply.id}
-                                className="flex items-start space-x-2.5 rounded-xl bg-slate-50/70 p-3 dark:bg-slate-900/40"
-                              >
-                                {reply.users?.avatar_url ? (
-                                  <img
-                                    src={reply.users.avatar_url}
-                                    alt={replyAuthorName}
-                                    className="h-8 w-8 rounded-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-green-400 to-blue-500 text-xs font-bold text-white dark:from-emerald-500 dark:to-teal-500">
-                                    {getInitials(replyAuthorName)}
-                                  </div>
-                                )}
-                                <div className="flex-1">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold text-sky-950 dark:text-slate-200">
-                                      {replyAuthorName}
-                                    </span>
-                                    <span className="text-[10px] text-slate-500 dark:text-slate-500">
-                                      {formatRelativeTime(reply.created_at)}
-                                    </span>
-                                  </div>
-                                  <p className="mt-1 text-sm leading-relaxed text-sky-950/90 dark:text-slate-300">
-                                    {reply.content}
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          })
+                          <div className="space-y-2 pr-1">
+                            {buildCommentTree(replies[post.id]).map((rootNode) => 
+                              renderCommentNode(rootNode, post.id)
+                            )}
+                          </div>
                         )}
                       </div>
 

@@ -164,6 +164,7 @@ CREATE TABLE IF NOT EXISTS community_replies (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   post_id UUID REFERENCES community_posts(id) ON DELETE CASCADE NOT NULL,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  parent_id UUID REFERENCES community_replies(id) ON DELETE CASCADE,
   author_name TEXT,
   content TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
