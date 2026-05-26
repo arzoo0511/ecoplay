@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
@@ -10,7 +10,6 @@ import {
   syncPreferencesToSupabase,
   saveRecommendedChallengeToDB,
   fetchPreferencesFromSupabase,
-  RecommendedChallenge
 } from '../services/recommendation';
 import {
   TbDroplet,
@@ -55,18 +54,7 @@ export const RecommendedChallenges: React.FC = () => {
     loadDBPreferences();
   }, [authUser?.id, dispatch]);
 
-  // Generate recommendations if none exist yet
-  useEffect(() => {
-    if (
-      state.recommendedChallenges && 
-      state.recommendedChallenges.length === 0 && 
-      !gamificationLoading
-    ) {
-      handleRefresh();
-    }
-  }, [state.recommendedChallenges?.length, gamificationLoading, level, currentStreak]);
-
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     setSyncing(true);
     try {
       const recommendations = generateRecommendations(
@@ -88,7 +76,18 @@ export const RecommendedChallenges: React.FC = () => {
     } finally {
       setSyncing(false);
     }
-  };
+  }, [state, level, currentStreak, dispatch]);
+
+  // Generate recommendations if none exist yet
+  useEffect(() => {
+    if (
+      state.recommendedChallenges &&
+      state.recommendedChallenges.length === 0 &&
+      !gamificationLoading
+    ) {
+      handleRefresh();
+    }
+  }, [state.recommendedChallenges, gamificationLoading, handleRefresh]);
 
   const getCategoryIcon = (category: string) => {
     switch (category) {

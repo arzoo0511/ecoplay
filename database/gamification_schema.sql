@@ -53,13 +53,11 @@ ON CONFLICT (level) DO NOTHING;
 -- One row per user. Generated column computes multiplier from streak.
 -- Avoids data-race anomalies: last_activity_date gates daily updates.
 CREATE TABLE IF NOT EXISTS user_streaks (
-  user_id              UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  current_streak       INT         NOT NULL DEFAULT 0,
-  longest_streak       INT         NOT NULL DEFAULT 0,
-  last_activity_date   DATE,
-  streak_freeze_count  INT         NOT NULL DEFAULT 1,
-  last_freeze_reset_at DATE        NOT NULL DEFAULT CURRENT_DATE,
-  streak_multiplier    NUMERIC(4,2) GENERATED ALWAYS AS (
+  user_id            UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  current_streak     INT         NOT NULL DEFAULT 0,
+  longest_streak     INT         NOT NULL DEFAULT 0,
+  last_activity_date DATE,
+  streak_multiplier  NUMERIC(4,2) GENERATED ALWAYS AS (
     CASE
       WHEN current_streak >= 30 THEN 3.00
       WHEN current_streak >= 14 THEN 2.50
@@ -68,25 +66,8 @@ CREATE TABLE IF NOT EXISTS user_streaks (
       ELSE                           1.00
     END
   ) STORED,
-  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
-ALTER TABLE user_streaks
-  ADD COLUMN IF NOT EXISTS streak_freeze_count INT NOT NULL DEFAULT 1,
-  ADD COLUMN IF NOT EXISTS last_freeze_reset_at DATE NOT NULL DEFAULT CURRENT_DATE;
-
-UPDATE user_streaks
-SET streak_freeze_count = CASE
-      WHEN streak_freeze_count IS NULL THEN 1
-      WHEN streak_freeze_count < 0 THEN 0
-      WHEN streak_freeze_count > 1 THEN 1
-      ELSE streak_freeze_count
-    END,
-    last_freeze_reset_at = COALESCE(last_freeze_reset_at, CURRENT_DATE)
-WHERE streak_freeze_count IS NULL
-   OR last_freeze_reset_at IS NULL
-   OR streak_freeze_count < 0
-   OR streak_freeze_count > 1;
 
 -- ─── 4. XP LEDGER (IMMUTABLE AUDIT LOG) ──────────────────────
 -- Append-only. Every XP award is recorded here for full auditability.
@@ -204,81 +185,37 @@ CREATE TRIGGER trg_update_stats_on_xp
 CREATE OR REPLACE FUNCTION update_streak_on_activity()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
-  v_today          DATE := CURRENT_DATE;
-  v_last_date      DATE;
-  v_freeze_count   INT;
-  v_reset_date     DATE;
+  v_today     DATE := CURRENT_DATE;
+  v_last_date DATE;
+  v_streak    INT;
 BEGIN
-  INSERT INTO user_streaks (
-    user_id,
-    current_streak,
-    longest_streak,
-    last_activity_date,
-    streak_freeze_count,
-    last_freeze_reset_at
-  )
-  VALUES (
-    NEW.user_id,
-    1,
-    1,
-    v_today,
-    1,
-    v_today
-  )
+  INSERT INTO user_streaks (user_id, current_streak, longest_streak, last_activity_date)
+    VALUES (NEW.user_id, 1, 1, v_today)
   ON CONFLICT (user_id) DO NOTHING;
 
-  SELECT
-    last_activity_date,
-    COALESCE(streak_freeze_count, 1),
-    COALESCE(last_freeze_reset_at, v_today)
-  INTO
-    v_last_date,
-    v_freeze_count,
-    v_reset_date
-  FROM user_streaks
-  WHERE user_id = NEW.user_id;
-
-  IF v_reset_date < v_today - INTERVAL '7 days' THEN
-    v_freeze_count := 1;
-    v_reset_date := v_today;
-  END IF;
-
-  v_freeze_count := LEAST(1, GREATEST(0, v_freeze_count));
+  SELECT last_activity_date, current_streak
+    INTO v_last_date, v_streak
+    FROM user_streaks
+   WHERE user_id = NEW.user_id;
 
   IF v_last_date = v_today THEN
-    UPDATE user_streaks
-       SET streak_freeze_count = v_freeze_count,
-           last_freeze_reset_at = v_reset_date,
-           updated_at = NOW()
-     WHERE user_id = NEW.user_id;
+    -- Already counted today; no change needed
     RETURN NEW;
   ELSIF v_last_date = v_today - INTERVAL '1 day' THEN
+    -- Consecutive day: extend streak
     UPDATE user_streaks
-       SET current_streak = current_streak + 1,
-           longest_streak = GREATEST(longest_streak, current_streak + 1),
+       SET current_streak     = current_streak + 1,
+           longest_streak     = GREATEST(longest_streak, current_streak + 1),
            last_activity_date = v_today,
-           streak_freeze_count = v_freeze_count,
-           last_freeze_reset_at = v_reset_date,
-           updated_at = NOW()
+           updated_at         = NOW()
      WHERE user_id = NEW.user_id;
   ELSE
-    IF v_freeze_count > 0 THEN
-      UPDATE user_streaks
-         SET current_streak = current_streak,
-             last_activity_date = v_today,
-             streak_freeze_count = v_freeze_count - 1,
-             last_freeze_reset_at = v_reset_date,
-             updated_at = NOW()
-       WHERE user_id = NEW.user_id;
-    ELSE
-      UPDATE user_streaks
-         SET current_streak = 0,
-             last_activity_date = v_today,
-             streak_freeze_count = 0,
-             last_freeze_reset_at = v_reset_date,
-             updated_at = NOW()
-       WHERE user_id = NEW.user_id;
-    END IF;
+    -- Gap detected: reset streak
+    UPDATE user_streaks
+       SET current_streak     = 1,
+           last_activity_date = v_today,
+           updated_at         = NOW()
+     WHERE user_id = NEW.user_id;
   END IF;
 
   RETURN NEW;

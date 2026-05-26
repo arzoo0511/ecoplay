@@ -9,7 +9,7 @@
  *
  * This file should be deleted once the migration is confirmed stable.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, LogIn, Mail, User, UserPlus } from 'lucide-react';

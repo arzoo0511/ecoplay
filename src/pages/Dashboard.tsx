@@ -13,135 +13,77 @@ import {
   TbSun,
   TbArrowUp,
   TbArrowDown,
-  TbPlayerPlay,
-  TbFlame,
+  TbPlayerPlay
 } from 'react-icons/tb';
-
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGamification } from '../hooks/useGamification';
 import { RecommendedChallenges } from '../components/RecommendedChallenges';
-import { computeStreakMultiplier } from '../lib/gamification';
+
 
 // ─── XP Panel Component ───────────────────────────────────────
 
 const XPPanel: React.FC<{ authUser: any }> = ({ authUser }) => {
-  const { state } = useGame();
-
-  const { stats, streak, badges, leaderboard, userRank, loading } =
-    useGamification(authUser?.id ?? null);
-
-  const currentStreak = state.streakState?.streak_count ?? 0;
-  const streakMultiplier = computeStreakMultiplier(currentStreak);
+  const { stats, streak, badges, leaderboard, userRank, loading } = useGamification(authUser?.id ?? null);
 
   const streakEmoji = (s: number) =>
     s >= 30 ? '💎' : s >= 14 ? '⚡' : s >= 7 ? '🔥' : s >= 3 ? '✨' : '🌱';
 
   const multiplierColor = (m: number) =>
-    m >= 3
-      ? 'text-yellow-300'
-      : m >= 2
-      ? 'text-orange-300'
-      : m >= 1.5
-      ? 'text-green-300'
-      : 'text-white';
+    m >= 3 ? 'text-yellow-300' : m >= 2 ? 'text-orange-300' : m >= 1.5 ? 'text-green-300' : 'text-white';
 
-  if (loading)
-    return (
-      <div className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 text-white text-center">
-        Loading XP data...
-      </div>
-    );
+  if (loading) return (
+    <div className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 text-white text-center">
+      Loading XP data...
+    </div>
+  );
 
   return (
     <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
       {/* XP + Level */}
       <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
         <h2 className="text-xl font-bold text-white mb-4">⚡ XP & Level</h2>
-
         {stats ? (
           <>
-            <div className="text-5xl font-black text-green-400 mb-1">
-              Lv.{stats.currentLevel}
-            </div>
-
-            <div className="text-white/70 text-sm mb-4">
-              {stats.totalXP.toLocaleString()} total XP
-            </div>
-
+            <div className="text-5xl font-black text-green-400 mb-1">Lv.{stats.currentLevel}</div>
+            <div className="text-white/70 text-sm mb-4">{stats.totalXP.toLocaleString()} total XP</div>
             <div className="h-3 bg-white/20 rounded-full overflow-hidden mb-2">
               <div
                 className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-700"
-                style={{
-                  width: `${Math.min(
-                    100,
-                    100 -
-                      (stats.xpToNextLevel /
-                        (stats.xpToNextLevel + 100)) *
-                        100
-                  )}%`,
-                }}
+                style={{ width: `${Math.min(100, 100 - (stats.xpToNextLevel / (stats.xpToNextLevel + 100)) * 100)}%` }}
               />
             </div>
-
-            <p className="text-xs text-white/50">
-              {stats.xpToNextLevel} XP to next level
-            </p>
-
+            <p className="text-xs text-white/50">{stats.xpToNextLevel} XP to next level</p>
             {userRank && (
-              <p className="mt-3 text-sm text-yellow-300 font-semibold">
-                🏅 Global Rank #{userRank}
-              </p>
+              <p className="mt-3 text-sm text-yellow-300 font-semibold">🏅 Global Rank #{userRank}</p>
             )}
           </>
         ) : (
-          <p className="text-white/50 text-sm">
-            Play to earn your first XP!
-          </p>
+          <p className="text-white/50 text-sm">Play to earn your first XP!</p>
         )}
       </div>
 
       {/* Streak */}
       <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
         <h2 className="text-xl font-bold text-white mb-4">
-          {streakEmoji(currentStreak)} Daily Streak
+          {streakEmoji(streak?.currentStreak ?? 0)} Daily Streak
         </h2>
-
-        <div className="text-5xl font-black text-orange-400 mb-1">
-          {currentStreak}
-        </div>
-
+        <div className="text-5xl font-black text-orange-400 mb-1">{streak?.currentStreak ?? 0}</div>
         <p className="text-white/70 text-sm mb-3">day streak</p>
-
-        <p className="text-white/50 text-xs mb-4">
-          Best: {streak?.longestStreak ?? 0} days
-        </p>
-
+        <p className="text-white/50 text-xs mb-4">Best: {streak?.longestStreak ?? 0} days</p>
         <div className="bg-white/5 rounded-xl p-3">
-          <p className="text-xs text-white/50 mb-1">
-            Current Multiplier
+          <p className="text-xs text-white/50 mb-1">Current Multiplier</p>
+          <p className={`text-2xl font-black ${multiplierColor(streak?.streakMultiplier ?? 1)}`}>
+            ×{streak?.streakMultiplier?.toFixed(1) ?? '1.0'}
           </p>
-
-          <p
-            className={`text-2xl font-black ${multiplierColor(
-              streakMultiplier
-            )}`}
-          >
-            ×{streakMultiplier.toFixed(1)}
-          </p>
-
-          <p className="text-xs text-white/40 mt-1">
-            applied to all XP earned
-          </p>
+          <p className="text-xs text-white/40 mt-1">applied to all XP earned</p>
         </div>
       </div>
 
       {/* Leaderboard + Badges */}
       <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-        <h2 className="text-xl font-bold text-white mb-4">
-          🏆 Leaderboard
-        </h2>
-
+        <h2 className="text-xl font-bold text-white mb-4">🏆 Leaderboard</h2>
         {leaderboard && leaderboard.entries.length > 0 ? (
           <div className="space-y-2">
             {leaderboard.entries.slice(0, 5).map((entry) => (
@@ -154,25 +96,6 @@ const XPPanel: React.FC<{ authUser: any }> = ({ authUser }) => {
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-yellow-300 w-6">
-                    #{entry.rank}
-                  </span>
-
-                  {entry.avatarUrl ? (
-                    <img
-                      src={entry.avatarUrl}
-                      alt={entry.username}
-                      className="w-6 h-6 rounded-full object-cover border border-white/20"
-                    />
-                  ) : (
-                    <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white font-bold border border-white/15">
-                      {entry.username.slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
-
-                  <span className="text-sm text-white truncate max-w-[80px]">
-                    {entry.username}
-                  </span>
                   <span className="text-sm font-bold text-yellow-300 w-6">#{entry.rank}</span>
                   {entry.avatarUrl ? (
                     <img
@@ -187,38 +110,22 @@ const XPPanel: React.FC<{ authUser: any }> = ({ authUser }) => {
                   )}
                   <span className="text-sm text-white truncate max-w-[80px]">{entry.username}</span>
                 </div>
-
                 <div className="text-right">
-                  <p className="text-xs font-bold text-green-400">
-                    {entry.totalXP.toLocaleString()} XP
-                  </p>
-
-                  <p className="text-xs text-white/40">
-                    Lv.{entry.currentLevel}
-                  </p>
+                  <p className="text-xs font-bold text-green-400">{entry.totalXP.toLocaleString()} XP</p>
+                  <p className="text-xs text-white/40">Lv.{entry.currentLevel}</p>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-white/50 text-sm">
-            No rankings yet — be the first!
-          </p>
+          <p className="text-white/50 text-sm">No rankings yet — be the first!</p>
         )}
-
         {badges.length > 0 && (
           <div className="mt-4 pt-4 border-t border-white/10">
-            <p className="text-xs text-white/50 mb-2">
-              Your Badges
-            </p>
-
+            <p className="text-xs text-white/50 mb-2">Your Badges</p>
             <div className="flex flex-wrap gap-2">
               {badges.slice(0, 6).map((b: any) => (
-                <span
-                  key={b.badge_key}
-                  title={b.badges?.name}
-                  className="text-xl cursor-default"
-                >
+                <span key={b.badge_key} title={b.badges?.name} className="text-xl cursor-default">
                   {b.badges?.icon}
                 </span>
               ))}
@@ -275,29 +182,10 @@ const Dashboard = () => {
 ];
 
   const { state, dispatch } = useGame();
-
-  const {
-    user,
-    ecoVillage,
-    dailyChallenges,
-    gameStats,
-    streakState,
-    notifications,
-  } = state;
-
+  const { user, ecoVillage, dailyChallenges, gameStats } = state;
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
 
-  const [timeLeft, setTimeLeft] = useState('');
-
-  const currentStreak = streakState?.streak_count ?? 0;
-  const availableFreezes =
-    streakState?.streak_freeze_count ?? 0;
-
-  const freezeRing = `${Math.max(
-    0,
-    Math.min(100, availableFreezes * 100)
-  )}%`;
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
@@ -326,92 +214,20 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [state.lastChallengeRefresh]);
 
-  React.useEffect(() => {
-    if (!notifications.length) return;
-
-    const timer = window.setTimeout(() => {
-      dispatch({ type: 'CLEAR_NOTIFICATIONS' });
-    }, 3600);
-
-    return () => window.clearTimeout(timer);
-  }, [dispatch, notifications.length]);
-
-  useEffect(() => {
-    if (!state.lastChallengeRefresh) return;
-
-    const updateTimer = () => {
-      const now = Date.now();
-
-      const nextRefresh =
-        state.lastChallengeRefresh + 24 * 60 * 60 * 1000;
-
-      const diff = nextRefresh - now;
-
-      if (diff <= 0) {
-        setTimeLeft('00:00:00');
-        return;
-      }
-
-      const hours = Math.floor(
-        diff / (1000 * 60 * 60)
-      );
-
-      const minutes = Math.floor(
-        (diff % (1000 * 60 * 60)) /
-          (1000 * 60)
-      );
-
-      const seconds = Math.floor(
-        (diff % (1000 * 60)) / 1000
-      );
-
-      const pad = (num: number) =>
-        String(num).padStart(2, '0');
-
-      setTimeLeft(
-        `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
-      );
-    };
-
-    updateTimer();
-
-    const interval = setInterval(updateTimer, 1000);
-
-    return () => clearInterval(interval);
-  }, [state.lastChallengeRefresh]);
-
-  const useCounter = (
-    end: number,
-    duration: number = 2000
-  ) => {
+  const useCounter = (end: number, duration: number = 2000) => {
     const [count, setCount] = useState(0);
-
     useEffect(() => {
       let startTime: number;
       let animationFrame: number;
-
       const animate = (currentTime: number) => {
         if (!startTime) startTime = currentTime;
-
-        const progress = Math.min(
-          (currentTime - startTime) / duration,
-          1
-        );
-
+        const progress = Math.min((currentTime - startTime) / duration, 1);
         setCount(Math.floor(progress * end));
-
-        if (progress < 1)
-          animationFrame =
-            requestAnimationFrame(animate);
+        if (progress < 1) animationFrame = requestAnimationFrame(animate);
       };
-
-      animationFrame =
-        requestAnimationFrame(animate);
-
-      return () =>
-        cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(animate);
+      return () => cancelAnimationFrame(animationFrame);
     }, [end, duration]);
-
     return count;
   };
 
@@ -419,30 +235,6 @@ const Dashboard = () => {
   const animatedPoints = useCounter(totalPoints);
 
   const calculateEcoScore = () => {
-    const villageScore =
-      (ecoVillage.airQuality +
-        ecoVillage.waterQuality +
-        ecoVillage.biodiversity) /
-      3;
-
-    const activityScore = Math.min(
-      100,
-      gameStats.totalTrashCollected / 10 +
-        ecoVillage.trees / 2
-    );
-
-    const completionScore = dailyChallenges.length
-      ? (dailyChallenges.filter((c) => c.completed)
-          .length /
-          dailyChallenges.length) *
-        100
-      : 0;
-
-    return Math.round(
-      villageScore * 0.4 +
-        activityScore * 0.3 +
-        completionScore * 0.3
-    );
     const villageScore = (ecoVillage.airQuality + ecoVillage.waterQuality + ecoVillage.biodiversity) / 3;
     const activityScore = Math.min(100, (gameStats.totalTrashCollected / 10) + (ecoVillage.trees / 2));
     const completionScore = dailyChallenges.length ? (dailyChallenges.filter(c => c.completed).length / dailyChallenges.length) * 100 : 0;
@@ -453,40 +245,10 @@ const Dashboard = () => {
   const animatedEcoScore = useCounter(ecoScore);
 
   const pointsChange = Math.floor(totalPoints * 0.12);
-
-  const ecoScoreChange = Math.floor(
-    (ecoScore - 65) / 5
-  );
+  const ecoScoreChange = Math.floor((ecoScore - 65) / 5);
 
   const routeFor = (text: string) => {
     const t = text.toLowerCase();
-
-    if (
-      t.includes('cleanup') ||
-      t.includes('ocean')
-    )
-      return '/ocean-cleanup-game';
-
-    if (
-      t.includes('water') ||
-      t.includes('tree') ||
-      t.includes('eco')
-    )
-      return '/eco-village';
-
-    if (
-      t.includes('learn') ||
-      t.includes('course') ||
-      t.includes('video')
-    )
-      return '/learn';
-
-    if (t.includes('event')) return '/events';
-
-    if (t.includes('community'))
-      return '/community';
-
-    return '/eco-village';
     if (t.includes('cleanup') || t.includes('ocean')) return '/ocean-cleanup-game';
     if (t.includes('water') || t.includes('tree') || t.includes('eco')) return '/eco-village';
     if (t.includes('learn') || t.includes('course') || t.includes('video')) return '/learn';
@@ -495,27 +257,14 @@ const Dashboard = () => {
     return '/eco-village';
   };
 
-  const startChallenge = (title: string) =>
-    navigate(routeFor(title));
+  const startChallenge = (title: string) => navigate(routeFor(title));
 
-  const addProgress = (
-    id: string,
-    delta = 20
-  ) => {
-    const challenge = dailyChallenges.find(
-      (c) => c.id === id
-    );
+  const addProgress = (id: string, delta = 20) => {
+    const challenge = dailyChallenges.find(c => c.id === id);
+    if (!challenge || challenge.completed) return;
 
-    if (!challenge || challenge.completed)
-      return;
-
-    const nextProgress = Math.min(
-      100,
-      (challenge.progress ?? 0) + delta
-    );
-
-    const justCompleted =
-      nextProgress >= 100;
+    const nextProgress = Math.min(100, (challenge.progress ?? 0) + delta);
+    const justCompleted = nextProgress >= 100;
 
     dispatch?.({
       type: 'UPDATE_CHALLENGE',
@@ -523,43 +272,15 @@ const Dashboard = () => {
         id,
         data: {
           progress: nextProgress,
-          completed: justCompleted,
-        },
-      },
+          completed: justCompleted
+        }
+      }
     });
 
     if (justCompleted) {
-      dispatch?.({
-        type: 'COMPLETE_DAILY_CHALLENGE',
-        payload: {
-          points: challenge.points,
-          challengeId: challenge.id,
-        },
-      });
+      dispatch?.({ type: 'ADD_POINTS', payload: challenge.points, activityType: 'daily_challenge' });
     }
   };
-
-  return <div>Dashboard content...</div>;
-        if (justCompleted) {
-          dispatch?.({
-            type: 'COMPLETE_DAILY_CHALLENGE',
-            payload: { points: c.points, challengeId: c.id },
-          });
-        }
-
-        dispatch?.({
-          type: 'UPDATE_CHALLENGE',
-          payload: { id: c.id, data: { progress: next, completed: justCompleted } },
-        });
-
-        return { ...c, progress: next, completed: justCompleted };
-      })
-    );
-  };
-
-  const currentStreak = streakState.streak_count;
-  const availableFreezes = streakState.streak_freeze_count;
-  const freezeRing = `${Math.max(0, Math.min(100, availableFreezes * 100))}%`;
 
   const stats = [
     {
@@ -627,66 +348,6 @@ const Dashboard = () => {
         <p className="text-xl text-blue-100 max-w-2xl mx-auto">
           Your environmental impact grows stronger every day. Continue your mission to save our planet!
         </p>
-      </motion.div>
-
-      {notifications.length > 0 && (
-        <motion.div variants={itemVariants} className="mb-6 flex flex-col gap-3">
-          {notifications.map((message, index) => (
-            <div
-              key={`${message}-${index}`}
-              className="rounded-xl border border-emerald-300/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-50"
-            >
-              {message}
-            </div>
-          ))}
-        </motion.div>
-      )}
-
-      <motion.div variants={itemVariants} className="mb-8 grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-6">
-        <div className="rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-lg">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm uppercase tracking-[0.2em] text-blue-100/80">Eco Streak</p>
-              <div className="mt-3 flex items-center gap-3">
-                <TbFlame className="h-8 w-8 text-orange-400" />
-                <div>
-                  <div className="text-4xl font-black text-orange-300">{currentStreak}</div>
-                  <p className="text-sm text-blue-100">day streak</p>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-orange-300/30 bg-orange-500/10 px-4 py-3 text-right">
-              <p className="text-xs text-orange-100">Multiplier</p>
-              <p className="mt-1 text-2xl font-black text-orange-300">×{computeStreakMultiplier(currentStreak).toFixed(1)}</p>
-            </div>
-          </div>
-          <div className="mt-5 rounded-xl bg-white/5 p-4 text-sm text-blue-100">
-            <p className="font-semibold text-white">How it works</p>
-            <p className="mt-2">Keep your daily challenge streak alive. Each week, you get one free freeze to protect your streak if you miss a day.</p>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.2em] text-blue-100/80">Streak Freeze</p>
-              <p className="mt-2 text-3xl font-black text-emerald-300">{availableFreezes}</p>
-              <p className="text-sm text-blue-100">available this week</p>
-            </div>
-            <div
-              className="relative flex h-20 w-20 items-center justify-center rounded-full"
-              style={{ background: `conic-gradient(#34d399 ${freezeRing}, rgba(255,255,255,0.12) 0)` }}
-            >
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-950/80">
-                <TbLeaf className="h-7 w-7 text-emerald-300" />
-              </div>
-            </div>
-          </div>
-          <div className="mt-5 rounded-xl bg-white/5 p-4 text-sm text-blue-100">
-            <p className="font-semibold text-white">Freeze badge</p>
-            <p className="mt-2">A freeze is consumed automatically when a day is missed, preserving your current streak until you complete the next challenge.</p>
-          </div>
-        </div>
       </motion.div>
 
       {/* Stats Grid */}
