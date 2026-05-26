@@ -149,6 +149,18 @@ const EcoVillage = () => {
       ],
     };
 
+    if (item.category === "trees_plants") {
+      updates.trees = Math.max(0, (ecoVillage.trees || 0) + 1);
+    }
+
+    if (item.category === "renewable_energy") {
+      updates.solarPanels = Math.max(0, (ecoVillage.solarPanels || 0) + 1);
+    }
+
+    if (item.id === "water_filter") {
+      updates.waterFilters = Math.max(0, (ecoVillage.waterFilters || 0) + 1);
+    }
+
     if (item.impactScores) {
       if (item.impactScores.air) {
         updates.airQuality = Math.min(
