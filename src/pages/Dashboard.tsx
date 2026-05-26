@@ -78,18 +78,26 @@ const Dashboard = () => {
   const startChallenge = (title: string) => navigate(routeFor(title));
 
   const addProgress = (id: string, delta = 20) => {
-    setChallenges(prev =>
-      prev.map(c => {
-        if (c.id !== id) return c;
-        if (c.completed) return c;
-        const next = Math.min(100, (c.progress ?? 0) + delta);
-        const justCompleted = next >= 100 && !c.completed;
-        if (justCompleted) {
-          dispatch?.({ type: 'ADD_POINTS', payload: c.points });
-        }
-        return { ...c, progress: next, completed: justCompleted ? true : c.completed };
-      })
-    );
+    const challenge = challenges.find(c => c.id === id);
+    if (!challenge || challenge.completed) return;
+
+    const next = Math.min(100, (challenge.progress ?? 0) + delta);
+    const justCompleted = next >= 100;
+
+    dispatch?.({
+      type: 'UPDATE_CHALLENGE',
+      payload: {
+        id,
+        data: {
+          progress: next,
+          completed: justCompleted,
+        },
+      },
+    });
+
+    if (justCompleted) {
+      dispatch?.({ type: 'ADD_POINTS', payload: challenge.points });
+    }
   };
 
   const stats = [
