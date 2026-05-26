@@ -1,32 +1,65 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import ConfigErrorScreen from './components/status/ConfigErrorScreen';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GameProvider } from './context/GameContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { validateEnv } from './config/validateEnv';
 import Layout from './components/Layout';
+import useSyncStatus from './hooks/useSyncStatus';
+import MergePrompt from './components/status/MergePrompt';
+import OfflineBanner from './components/status/OfflineBanner';
 
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import OceanCleanupGame from './pages/OceanCleanupGame';
-import EcoVillage from './pages/EcoVillage';
-import Learn from './pages/Learn';
-import Bingo from './pages/Bingo';
-import Community from './pages/Community';
-import Events from './pages/Events';
+import Auth from './pages/Auth';
 
+const Bingo = React.lazy(() => import('./pages/Bingo'));
+const Community = React.lazy(() => import('./pages/Community'));
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const EcoVillage = React.lazy(() => import('./pages/EcoVillage'));
+const Events = React.lazy(() => import('./pages/Events'));
+const LandingPage = React.lazy(() => import('./pages/LandingPage'));
+const Learn = React.lazy(() => import('./pages/Learn'));
+const OceanCleanupGame = React.lazy(() => import('./pages/OceanCleanupGame'));
+
+/**
+ * Protects routes that require authentication.
+ * Shows a loading indicator while the Supabase session is being restored
+ * to prevent a flash of redirect on page refresh.
+ */
 const Protected: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
+  const { user, loading, isGuest } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white text-xl">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!user && !isGuest) return <Navigate to="/login" replace />;
+
   return <Layout>{children}</Layout>;
 };
+const AppRoutes = () => {
+    const { supabaseError } = useAuth();
+    const { pendingCount, isSyncing } = useSyncStatus();
+    const bannerMessage = `${supabaseError ?? ''}${isSyncing ? ' Syncing...' : ''}`;
 
-export default function App() {
-  return (
-    <AuthProvider>
-      <GameProvider>
+    return (
+      <>
+        <OfflineBanner
+          visible={!!supabaseError}
+          message={bannerMessage}
+          pendingCount={pendingCount}
+        />
         <BrowserRouter>
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={<Protected><Dashboard /></Protected>} />
+            {/* Public routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Auth />} />
+
+            {/* Protected routes */}
             <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
             <Route path="/ocean-cleanup-game" element={<Protected><OceanCleanupGame /></Protected>} />
             <Route path="/eco-village" element={<Protected><EcoVillage /></Protected>} />
@@ -34,10 +67,32 @@ export default function App() {
             <Route path="/bingo" element={<Protected><Bingo /></Protected>} />
             <Route path="/community" element={<Protected><Community /></Protected>} />
             <Route path="/events" element={<Protected><Events /></Protected>} />
+
+            {/* Fallback */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </BrowserRouter>
-      </GameProvider>
-    </AuthProvider>
+      </>
+    );
+  };
+
+export default function App() {
+  const envStatus = validateEnv();
+
+  if (!envStatus.valid) {
+    return <ConfigErrorScreen missing={envStatus.missing} />;
+  }
+
+  
+
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <GameProvider>
+          <MergePrompt />
+          <AppRoutes />
+        </GameProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

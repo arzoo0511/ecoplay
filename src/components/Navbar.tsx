@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Waves, TreePine, BookOpen, Users, Leaf, LogOut } from 'lucide-react';
+import { BookOpen, Home, Leaf, LogOut, TreePine, Users, Waves } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useGame } from '../context/GameContext';
+import ThemeToggle from './ThemeToggle';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: Home },
@@ -13,9 +14,11 @@ const navItems = [
   { path: '/community', label: 'Community', icon: Users }
 ];
 
-const linkBase = 'px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2';
-const active = 'bg-gradient-to-r from-green-500 to-blue-600 text-white';
-const inactive = 'bg-white/10 text-white hover:bg-white/20';
+const linkBase =
+  'flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-theme duration-300';
+const active = 'bg-gradient-to-r from-green-500 to-blue-600 text-white dark:from-emerald-500 dark:to-teal-500';
+const inactive =
+  'bg-white/10 text-white hover:bg-white/20 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10';
 
 const NavBar = () => {
   const { user: authUser, logout } = useAuth();
@@ -24,23 +27,21 @@ const NavBar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-gradient-to-r from-blue-900/95 to-green-800/95 backdrop-blur-lg border-b border-blue-700/40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
+    <nav className="fixed top-0 z-50 w-full border-b border-blue-700/40 bg-gradient-to-r from-blue-900/95 to-green-800/95 backdrop-blur-xl transition-theme duration-300 dark:border-white/10 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950/90">
+      <div className="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
         <button
           onClick={() => navigate('/dashboard')}
-          className="text-xl font-extrabold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent"
+          className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-xl font-extrabold text-transparent dark:from-emerald-400 dark:to-teal-400"
         >
           EcoPlay
         </button>
 
-        <div className="hidden md:flex ml-8 gap-2">
+        <div className="ml-8 hidden gap-2 md:flex">
           {navItems.map(({ path, label, icon: Icon }) => (
             <NavLink
               key={path}
               to={path}
-              className={({ isActive }) =>
-                `${linkBase} ${isActive ? active : inactive}`
-              }
+              className={({ isActive }) => `${linkBase} ${isActive ? active : inactive}`}
             >
               <Icon className="h-4 w-4" />
               {label}
@@ -48,25 +49,26 @@ const NavBar = () => {
           ))}
         </div>
 
-        <div className="ml-auto flex items-center gap-4">
-          <div className="hidden sm:flex flex-col text-right">
-            <span className="text-xs text-blue-200">User</span>
-            <span className="text-sm font-semibold text-white">{authUser?.name || 'Player'}</span>
+        <div className="ml-auto flex items-center gap-3">
+          <ThemeToggle className="shrink-0" />
+          <div className="hidden rounded-2xl bg-white/10 px-3 py-2 text-right transition-theme duration-300 sm:flex sm:flex-col dark:border dark:border-white/10 dark:bg-white/5">
+            <span className="text-xs text-blue-200 dark:text-slate-400">User</span>
+            <span className="text-sm font-semibold text-white dark:text-white">{authUser?.name || 'Player'}</span>
           </div>
-          <div className="hidden sm:flex flex-col text-right">
-            <span className="text-xs text-blue-200">Points</span>
-            <span className="text-sm font-semibold text-green-400">{state.user.points}</span>
+          <div className="hidden rounded-2xl bg-white/10 px-3 py-2 text-right transition-theme duration-300 sm:flex sm:flex-col dark:border dark:border-white/10 dark:bg-white/5">
+            <span className="text-xs text-blue-200 dark:text-slate-400">Points</span>
+            <span className="text-sm font-semibold text-green-400 dark:text-emerald-400">{state.user.points}</span>
           </div>
           <button
             onClick={logout}
-            className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs bg-white/10 hover:bg-white/20 text-white"
+            className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-2 text-xs font-semibold text-white transition-theme duration-300 hover:bg-white/20 dark:border dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10"
           >
             <LogOut className="h-4 w-4" />
             Logout
           </button>
           <button
-            onClick={() => setMobileOpen(o => !o)}
-            className="md:hidden px-3 py-2 rounded-lg bg-white/10 text-white text-xs"
+            onClick={() => setMobileOpen((open) => !open)}
+            className="rounded-full bg-white/10 px-3 py-2 text-xs font-semibold text-white transition-theme duration-300 dark:border dark:border-white/10 dark:bg-white/5 dark:text-slate-100 md:hidden"
           >
             {mobileOpen ? 'Close' : 'Menu'}
           </button>
@@ -74,23 +76,24 @@ const NavBar = () => {
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden px-4 pb-4 flex flex-col gap-2">
-          {navItems.map(({ path, label }) => (
-            <NavLink
-              key={path}
-              to={path}
-              onClick={() => setMobileOpen(false)}
-              className={({ isActive }) =>
-                `${linkBase} ${isActive ? active : inactive}`
-              }
-            >
-              {label}
-            </NavLink>
-          ))}
+        <div className="border-t border-white/10 px-4 pb-4 pt-3 transition-theme duration-300 dark:border-white/10 md:hidden">
+          <div className="flex flex-col gap-2 rounded-2xl bg-black/20 p-3 backdrop-blur-xl dark:border dark:border-white/10 dark:bg-gray-800/80">
+            {navItems.map(({ path, label, icon: Icon }) => (
+              <NavLink
+                key={path}
+                to={path}
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) => `${linkBase} ${isActive ? active : inactive}`}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </NavLink>
+            ))}
+          </div>
         </div>
       )}
     </nav>
   );
 };
 
-export default Navbar;
+export default NavBar;

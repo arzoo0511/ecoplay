@@ -1,3 +1,37 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  html.dark {
+    @apply bg-slate-950 text-slate-50;
+  }
+
+  body {
+    @apply min-h-screen antialiased transition-theme duration-300;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+
+  ::selection {
+    @apply bg-emerald-400/30 text-white;
+  }
+
+  /* Smooth theme transitions */
+  * {
+    @apply transition-colors duration-300;
+  }
+}
+
+@layer components {
+  .theme-transition {
+    @apply transition-colors duration-300 ease-in-out;
+  }
+}

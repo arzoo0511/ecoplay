@@ -2,13 +2,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { 
-  Play, 
-  Trophy, 
-  Zap,
-  Target,
-  Clock,
-  Star
-} from 'lucide-react';
+  TbPlayerPlay, 
+  TbTrophy, 
+  TbTarget, 
+  TbClock, 
+  TbStar,
+  TbTrash
+} from 'react-icons/tb';
 
 interface TrashItem {
   id: string;
@@ -27,6 +27,14 @@ interface Fish {
   direction: number;
 }
 
+const TRASH_TYPES = {
+  bottle: { points: 10, color: 'bg-blue-400', emoji: '🍶' },
+  can: { points: 15, color: 'bg-gray-400', emoji: '🥤' },
+  bag: { points: 20, color: 'bg-green-400', emoji: '🛍️' },
+  tire: { points: 50, color: 'bg-black', emoji: '🛞' },
+  oil: { points: 100, color: 'bg-yellow-600', emoji: '🛢️' }
+} as const;
+
 const OceanCleanupGame = () => {
   const { state, dispatch } = useGame();
   const [gameActive, setGameActive] = useState(false);
@@ -41,20 +49,24 @@ const OceanCleanupGame = () => {
   const [totalCollected, setTotalCollected] = useState(0);
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const mousePos = useRef({ x: 0, y: 0 });
+  const fishRef = useRef<Fish[]>([]);
+
+  useEffect(() => {
+    fishRef.current = fish;
+  }, [fish]);
+
   // Guard: ensures final score is committed to GameContext exactly once per round.
   const hasCommittedScoreRef = useRef(false);
+  const scoreRef = useRef(score);
+  const totalCollectedRef = useRef(totalCollected);
 
-  const trashTypes = {
-    bottle: { points: 10, color: 'bg-blue-400', emoji: '🍶' },
-    can: { points: 15, color: 'bg-gray-400', emoji: '🥤' },
-    bag: { points: 20, color: 'bg-green-400', emoji: '🛍️' },
-    tire: { points: 50, color: 'bg-black', emoji: '🛞' },
-    oil: { points: 100, color: 'bg-yellow-600', emoji: '🛢️' }
-  };
+  useEffect(() => { scoreRef.current = score; }, [score]);
+  useEffect(() => { totalCollectedRef.current = totalCollected; }, [totalCollected]);
+
 
   // Generate single trash item
   const generateSingleTrash = useCallback(() => {
-    const types = Object.keys(trashTypes) as (keyof typeof trashTypes)[];
+    const types = Object.keys(TRASH_TYPES) as (keyof typeof TRASH_TYPES)[];
     const type = types[Math.floor(Math.random() * types.length)];
     
     return {
@@ -62,7 +74,7 @@ const OceanCleanupGame = () => {
       x: Math.random() * 80 + 10,
       y: Math.random() * 70 + 15,
       type,
-      points: trashTypes[type].points,
+      points: TRASH_TYPES[type].points,
       size: type === 'tire' ? 40 : type === 'oil' ? 35 : 25,
     };
   }, []);
@@ -164,7 +176,10 @@ const OceanCleanupGame = () => {
     if (!gameActive) return;
 
     const fishInterval = setInterval(() => {
-      setFish(prev => prev.map(f => {
+      let collisionOccurred = false;
+      const currentFish = fishRef.current;
+      
+      const newFish = currentFish.map(f => {
         let newX = f.x + (f.speed * f.direction * 0.5);
         let newDirection = f.direction;
         
@@ -179,7 +194,7 @@ const OceanCleanupGame = () => {
         const dy = Math.abs(mousePos.current.y - f.y);
         
         if (dx < 5 && dy < 5) {
-          handleFishCollision();
+          collisionOccurred = true;
         }
 
         return {
@@ -187,7 +202,13 @@ const OceanCleanupGame = () => {
           x: newX,
           direction: newDirection
         };
-      }));
+      });
+
+      setFish(newFish);
+
+      if (collisionOccurred) {
+        handleFishCollision();
+      }
     }, 50);
 
     return () => clearInterval(fishInterval);
@@ -196,40 +217,45 @@ const OceanCleanupGame = () => {
   const endGame = useCallback(() => {
     setGameActive(false);
 
+    const finalScore = scoreRef.current;
+    const finalCollected = totalCollectedRef.current;
+
     // Commit final round score to GameContext exactly once per round.
-    if (score > 0 && !hasCommittedScoreRef.current) {
+    if (finalScore > 0 && !hasCommittedScoreRef.current) {
       hasCommittedScoreRef.current = true;
-      dispatch({ type: 'ADD_POINTS', payload: score });
+      dispatch({ type: 'ADD_POINTS', payload: finalScore });
     }
 
     dispatch({
       type: 'UPDATE_OCEAN_STATS',
       payload: {
-        totalTrashCollected: (state.gameStats?.totalTrashCollected || 0) + totalCollected,
+        totalTrashCollected: (state.gameStats?.totalTrashCollected || 0) + finalCollected,
         perfectCleanups: state.gameStats?.perfectCleanups || 0
       }
     });
 
-    if (score > 500) {
+    if (finalScore > 500) {
       setLevel(prev => prev + 1);
     }
-  }, [dispatch, score, totalCollected, state.gameStats]);
+  }, [dispatch, state.gameStats]);
 
+  // Timer tick
   useEffect(() => {
     if (!gameActive) return;
 
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          endGame();
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeLeft(prev => Math.max(0, prev - 1));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [gameActive, endGame]);
+  }, [gameActive]);
+
+  // End game condition
+  useEffect(() => {
+    if (gameActive && timeLeft === 0) {
+      endGame();
+    }
+  }, [gameActive, timeLeft, endGame]);
 
   useEffect(() => {
     if (combo > 0 && combo % 5 === 0) {
@@ -267,20 +293,22 @@ const OceanCleanupGame = () => {
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {[
-          { icon: Trophy, label: 'Score', value: score.toLocaleString(), color: 'text-yellow-400' },
-          { icon: Clock, label: 'Time', value: formatTime(timeLeft), color: 'text-blue-400' },
-          { icon: Target, label: 'Level', value: level.toString(), color: 'text-green-400' },
-          { icon: Star, label: 'Combo', value: `x${combo}`, color: 'text-purple-400' },
-          { icon: Zap, label: 'Collected', value: totalCollected.toString(), color: 'text-orange-400' }
+          { icon: TbTrophy, label: 'Score', value: score.toLocaleString(), color: 'text-yellow-400', bgColor: 'bg-yellow-500/15 border-yellow-500/30' },
+          { icon: TbClock, label: 'Time', value: formatTime(timeLeft), color: 'text-sky-300', bgColor: 'bg-sky-500/15 border-sky-500/30' },
+          { icon: TbTarget, label: 'Level', value: level.toString(), color: 'text-green-400', bgColor: 'bg-green-500/15 border-green-500/30' },
+          { icon: TbStar, label: 'Combo', value: `x${combo}`, color: 'text-purple-400', bgColor: 'bg-purple-500/15 border-purple-500/30' },
+          { icon: TbTrash, label: 'Collected', value: totalCollected.toString(), color: 'text-orange-400', bgColor: 'bg-orange-500/15 border-orange-500/30' }
         ].map((stat) => {
           const Icon = stat.icon;
           return (
             <motion.div
               key={stat.label}
               whileHover={{ scale: 1.05 }}
-              className="bg-white/10 backdrop-blur-lg rounded-xl p-4 text-center border border-white/20"
+              className="bg-white/10 backdrop-blur-lg rounded-xl p-4 text-center border border-white/20 flex flex-col items-center justify-center"
             >
-              <Icon className={`h-6 w-6 ${stat.color} mx-auto mb-2`} />
+              <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center mb-2 border`}>
+                <Icon className={`h-5 w-5 ${stat.color}`} />
+              </div>
               <p className="text-2xl font-bold text-white">{stat.value}</p>
               <p className="text-sm text-blue-100">{stat.label}</p>
             </motion.div>
@@ -309,9 +337,9 @@ const OceanCleanupGame = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={startGame}
-                className="bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-4 px-8 rounded-xl text-xl hover:from-green-600 hover:to-blue-600 transition-all"
+                className="bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-4 px-8 rounded-xl text-xl hover:from-green-600 hover:to-blue-600 transition-all animate-bounce-subtle"
               >
-                <Play className="h-6 w-6 inline mr-2" />
+                <TbPlayerPlay className="h-6 w-6 inline mr-2 text-white" />
                 {gameStarted ? 'Play Again' : 'Start Game'}
               </motion.button>
             </div>
@@ -359,7 +387,7 @@ const OceanCleanupGame = () => {
           {/* Trash Items */}
           <AnimatePresence>
             {trash.map((item) => {
-              const trashStyle = trashTypes[item.type];
+              const trashStyle = TRASH_TYPES[item.type];
               
               return (
                 <motion.div

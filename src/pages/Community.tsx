@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  MessageCircle, 
-  ThumbsUp, 
-  Reply, 
-  Share2, 
-  Plus,
-  Search,
-  Award,
-  Clock
-} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Award, Clock, MessageCircle, Plus, Reply, Search, Share2, ThumbsUp } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import {
+  chipBase,
+  glassCard,
+  inputClass,
+  modalBackdrop,
+  modalPanel,
+  pageShell,
+  pageSubtitle,
+  pageTitle,
+  primaryButton,
+  secondaryButton,
+  softCard,
+} from '../lib/ui';
 
 interface Post {
   id: string;
@@ -27,6 +33,8 @@ interface Post {
 }
 
 const Community = () => {
+  const { isGuest } = useAuth();
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewPost, setShowNewPost] = useState(false);
@@ -36,23 +44,14 @@ const Community = () => {
     category: 'question',
     tags: ''
   });
-
-  const categories = [
-    { id: 'all', name: 'All Posts', emoji: '🌟' },
-    { id: 'question', name: 'Questions', emoji: '❓' },
-    { id: 'tips', name: 'Tips & Advice', emoji: '💡' },
-    { id: 'project', name: 'Projects', emoji: '🔨' },
-    { id: 'discussion', name: 'Discussion', emoji: '💬' }
-  ];
-
-  // Initialize posts as state so actions can update them
   const [posts, setPosts] = useState<Post[]>([
     {
       id: '1',
       author: 'EcoEnthusiast',
-      avatar: '👨‍🌾',
+      avatar: 'EE',
       title: 'Best plants for indoor air purification?',
-      content: 'I\'m looking to improve my home\'s air quality naturally. What are the most effective plants for removing toxins and producing oxygen indoors? I have medium to low light conditions.',
+      content:
+        "I'm looking to improve my home's air quality naturally. What are the most effective plants for removing toxins and producing oxygen indoors? I have medium to low light conditions.",
       category: 'question',
       timestamp: '2 hours ago',
       likes: 24,
@@ -64,9 +63,10 @@ const Community = () => {
     {
       id: '2',
       author: 'GreenGuru',
-      avatar: '👩‍🔬',
-      title: 'DIY Composting System Success Story',
-      content: 'Just wanted to share my homemade composting system that\'s been working amazingly for 6 months! Used recycled materials and it\'s producing rich soil for my garden. Happy to share the blueprint if anyone\'s interested.',
+      avatar: 'GG',
+      title: 'DIY composting system success story',
+      content:
+        "Just wanted to share my homemade composting system that's been working amazingly for 6 months. Used recycled materials and it's producing rich soil for my garden. Happy to share the blueprint if anyone's interested.",
       category: 'project',
       timestamp: '5 hours ago',
       likes: 42,
@@ -78,9 +78,10 @@ const Community = () => {
     {
       id: '3',
       author: 'SolarSaver',
-      avatar: '🔌',
-      title: 'Solar panel installation - permit process?',
-      content: 'I\'m planning to install solar panels on my roof but I\'m confused about the permit process. Does anyone have experience with residential solar installation permits? What documents do I need?',
+      avatar: 'SS',
+      title: 'Solar panel installation permit process?',
+      content:
+        "I'm planning to install solar panels on my roof but I'm confused about the permit process. Does anyone have experience with residential solar installation permits? What documents do I need?",
       category: 'question',
       timestamp: '1 day ago',
       likes: 18,
@@ -92,9 +93,10 @@ const Community = () => {
     {
       id: '4',
       author: 'ZeroWasteZara',
-      avatar: '♻️',
-      title: 'Zero waste grocery shopping tips',
-      content: 'After 2 years of zero-waste living, here are my top tips for plastic-free grocery shopping: bring your own containers, shop at farmers markets, buy in bulk, and don\'t forget mesh produce bags!',
+      avatar: 'ZZ',
+      title: 'Zero-waste grocery shopping tips',
+      content:
+        "After 2 years of zero-waste living, here are my top tips for plastic-free grocery shopping: bring your own containers, shop at farmers markets, buy in bulk, and don't forget mesh produce bags.",
       category: 'tips',
       timestamp: '1 day ago',
       likes: 67,
@@ -106,9 +108,10 @@ const Community = () => {
     {
       id: '5',
       author: 'ClimateConscious',
-      avatar: '🌡️',
-      title: 'Local climate action groups - how to find and join?',
-      content: 'I want to get more involved in climate activism in my community. How do I find local environmental groups? What should I expect when joining? Any tips for someone who\'s new to activism?',
+      avatar: 'CC',
+      title: 'Local climate action groups: how to find and join?',
+      content:
+        "I want to get more involved in climate activism in my community. How do I find local environmental groups? What should I expect when joining? Any tips for someone who's new to activism?",
       category: 'discussion',
       timestamp: '2 days ago',
       likes: 31,
@@ -118,24 +121,31 @@ const Community = () => {
       tags: ['activism', 'community', 'climate-action']
     }
   ]);
-
-  // Reply modal state
   const [replyModal, setReplyModal] = useState<{ open: boolean; postId?: string }>({ open: false });
   const [replyText, setReplyText] = useState('');
 
-  // Like handler
+  const categories = [
+    { id: 'all', name: 'All Posts' },
+    { id: 'question', name: 'Questions' },
+    { id: 'tips', name: 'Tips & Advice' },
+    { id: 'project', name: 'Projects' },
+    { id: 'discussion', name: 'Discussion' }
+  ];
+
   const handleLike = (id: string) => {
-    setPosts(prev =>
-      prev.map(p =>
-        p.id === id ? { ...p, isLiked: !p.isLiked, likes: p.isLiked ? p.likes - 1 : p.likes + 1 } : p
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === id
+          ? { ...post, isLiked: !post.isLiked, likes: post.isLiked ? post.likes - 1 : post.likes + 1 }
+          : post
       )
     );
   };
 
-  // Share handler
   const handleShare = async (id: string) => {
-    const post = posts.find(p => p.id === id);
+    const post = posts.find((currentPost) => currentPost.id === id);
     if (!post) return;
+
     const url = `${window.location.origin}/community/${id}`;
     try {
       if (navigator.share) {
@@ -145,49 +155,55 @@ const Community = () => {
         alert('Post link copied to clipboard');
       }
     } catch {
-      // ignore
+      // Ignore share cancellation.
     }
   };
-
-  // Open reply
-  const openReply = (id: string) => setReplyModal({ open: true, postId: id });
 
   const submitReply = (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyModal.postId || !replyText.trim()) return;
-    setPosts(prev =>
-      prev.map(p => (p.id === replyModal.postId ? { ...p, replies: p.replies + 1 } : p))
+
+    setPosts((prev) =>
+      prev.map((post) => (post.id === replyModal.postId ? { ...post, replies: post.replies + 1 } : post))
     );
     setReplyText('');
     setReplyModal({ open: false });
   };
 
-  const filteredPosts = posts.filter(post => {
+  const filteredPosts = posts.filter((post) => {
     const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory;
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+    const loweredSearch = searchTerm.toLowerCase();
+    const matchesSearch =
+      post.title.toLowerCase().includes(loweredSearch) ||
+      post.content.toLowerCase().includes(loweredSearch) ||
+      post.tags.some((tag) => tag.toLowerCase().includes(loweredSearch));
     return matchesCategory && matchesSearch;
   });
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'question': return 'bg-blue-500/20 text-blue-400 border-blue-400/30';
-      case 'tips': return 'bg-green-500/20 text-green-400 border-green-400/30';
-      case 'project': return 'bg-purple-500/20 text-purple-400 border-purple-400/30';
-      case 'discussion': return 'bg-orange-500/20 text-orange-400 border-orange-400/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-400/30';
+      case 'question':
+        return 'border-blue-400/30 bg-blue-500/20 text-blue-400 dark:text-sky-300';
+      case 'tips':
+        return 'border-green-400/30 bg-green-500/20 text-green-400 dark:text-emerald-300';
+      case 'project':
+        return 'border-purple-400/30 bg-purple-500/20 text-purple-400 dark:text-violet-300';
+      case 'discussion':
+        return 'border-orange-400/30 bg-orange-500/20 text-orange-400 dark:text-orange-300';
+      default:
+        return 'border-gray-400/30 bg-gray-500/20 text-gray-400 dark:border-white/10 dark:text-slate-300';
     }
   };
 
   const handleSubmitPost = (e: React.FormEvent) => {
     e.preventDefault();
     const id = Date.now().toString();
-    setPosts(prev => [
+
+    setPosts((prev) => [
       {
         id,
         author: 'You',
-        avatar: '👤',
+        avatar: 'YU',
         title: newPost.title,
         content: newPost.content,
         category: newPost.category,
@@ -198,70 +214,84 @@ const Community = () => {
         isSolved: false,
         tags: newPost.tags
           .split(',')
-          .map(t => t.trim())
+          .map((tag) => tag.trim())
           .filter(Boolean)
       },
       ...prev
     ]);
+
     setShowNewPost(false);
     setNewPost({ title: '', content: '', category: 'question', tags: '' });
   };
+
+  if (isGuest) {
+    return (
+      <div className={`${pageShell} min-h-screen flex items-center justify-center`}>
+        <div className="w-full max-w-xl rounded-2xl border border-white/20 bg-white/90 p-8 text-center shadow-2xl dark:bg-white/5">
+          <h1 className="text-3xl font-bold text-sky-950 dark:text-white">
+            Community features are available to registered users.
+          </h1>
+          <button
+            onClick={() => navigate('/login')}
+            className={`${primaryButton} mt-6 justify-center`}
+          >
+            Sign In to Continue
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen p-4 sm:p-6 lg:p-8"
+      className={pageShell}
     >
-      {/* Header */}
       <div className="mb-8 text-center">
-        <h1 className="text-4xl lg:text-6xl font-bold text-white mb-4">
-          🌱 Eco Community
-        </h1>
-        <p className="text-xl text-blue-100 max-w-3xl mx-auto">
+        <h1 className={`${pageTitle} mb-4`}>Eco Community</h1>
+        <p className={pageSubtitle}>
           Connect with fellow environmental enthusiasts. Ask questions, share solutions, and collaborate on sustainable projects.
         </p>
       </div>
 
-      {/* Community Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-4">
         {[
-          { label: 'Active Members', value: '2.4K', color: 'text-green-400' },
-          { label: 'Posts Today', value: '47', color: 'text-blue-400' },
-          { label: 'Solved Questions', value: '156', color: 'text-purple-400' },
-          { label: 'Projects Shared', value: '89', color: 'text-orange-400' }
+          { label: 'Active Members', value: '2.4K', color: 'text-green-400 dark:text-emerald-400' },
+          { label: 'Posts Today', value: '47', color: 'text-blue-400 dark:text-sky-400' },
+          { label: 'Solved Questions', value: '156', color: 'text-purple-400 dark:text-violet-400' },
+          { label: 'Projects Shared', value: '89', color: 'text-orange-400 dark:text-orange-400' }
         ].map((stat) => (
           <motion.div
             key={stat.label}
             whileHover={{ scale: 1.05 }}
-            className="bg-white/10 backdrop-blur-lg rounded-xl p-4 text-center border border-white/20"
+            className={`${softCard} p-4 text-center`}
           >
-            <div className={`text-2xl font-bold ${stat.color} mb-1`}>{stat.value}</div>
-            <div className="text-sm text-blue-100">{stat.label}</div>
+            <div className={`mb-1 text-2xl font-bold ${stat.color}`}>{stat.value}</div>
+            <div className="text-sm font-medium text-sky-950/95 dark:text-slate-300">{stat.label}</div>
           </motion.div>
         ))}
       </div>
 
-      {/* Search and Filter */}
       <div className="mb-8 space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300 h-5 w-5" />
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500 dark:text-slate-500" />
             <input
               type="text"
               placeholder="Search posts, tags, or content..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl text-white placeholder-blue-300 focus:outline-none focus:border-blue-400"
+              className={`${inputClass} pl-10`}
             />
           </div>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowNewPost(true)}
-            className="bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-3 px-6 rounded-xl hover:from-green-600 hover:to-blue-600 transition-all"
+            className={primaryButton}
           >
-            <Plus className="h-5 w-5 inline mr-2" />
+            <Plus className="h-5 w-5" />
             New Post
           </motion.button>
         </div>
@@ -271,20 +301,18 @@ const Community = () => {
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+              className={`${chipBase} ${
                 selectedCategory === category.id
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white/10 text-blue-100 hover:bg-white/20'
+                  ? 'border-blue-700 bg-blue-900 text-white dark:border-emerald-500 dark:bg-gradient-to-r dark:from-emerald-500 dark:to-teal-500'
+                  : 'border-slate-200/80 bg-white/88 text-slate-800 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10'
               }`}
             >
-              <span>{category.emoji}</span>
-              <span>{category.name}</span>
+              {category.name}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Posts Feed */}
       <div className="space-y-6">
         {filteredPosts.map((post) => (
           <motion.div
@@ -292,71 +320,69 @@ const Community = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.01 }}
-            className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20"
+            className={`${glassCard} p-6`}
           >
-            {/* Post Header */}
-            <div className="flex items-start justify-between mb-4">
+            <div className="mb-4 flex items-start justify-between">
               <div className="flex items-center space-x-3">
-                <div className="text-2xl">{post.avatar}</div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-green-400 to-blue-500 text-sm font-bold text-white dark:from-emerald-500 dark:to-teal-500">
+                  {post.avatar}
+                </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <h3 className="font-bold text-white">{post.author}</h3>
+                    <h3 className="font-bold text-sky-950 dark:text-white">{post.author}</h3>
                     {post.isSolved && (
-                      <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center">
-                        <Award className="h-3 w-3 mr-1" />
+                      <div className="flex items-center rounded-full bg-emerald-500 px-2 py-1 text-xs font-bold text-white">
+                        <Award className="mr-1 h-3 w-3" />
                         Solved
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center text-sm text-blue-300">
-                    <Clock className="h-4 w-4 mr-1" />
+                  <div className="flex items-center text-sm text-sky-950/80 dark:text-slate-400">
+                    <Clock className="mr-1 h-4 w-4" />
                     {post.timestamp}
                   </div>
                 </div>
               </div>
-              <div className={`px-3 py-1 rounded-full text-sm font-bold border ${getCategoryColor(post.category)}`}>
-                {categories.find(c => c.id === post.category)?.name}
+              <div className={`rounded-full border px-3 py-1 text-sm font-bold ${getCategoryColor(post.category)}`}>
+                {categories.find((category) => category.id === post.category)?.name}
               </div>
             </div>
 
-            {/* Post Content */}
-            <h2 className="text-xl font-bold text-white mb-3">{post.title}</h2>
-            <p className="text-blue-100 mb-4 leading-relaxed">{post.content}</p>
+            <h2 className="mb-3 text-xl font-bold text-sky-950 dark:text-white">{post.title}</h2>
+            <p className="mb-4 leading-relaxed text-sky-950/85 dark:text-slate-300">{post.content}</p>
 
-            {/* Tags */}
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="mb-4 flex flex-wrap gap-2">
               {post.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="bg-white/10 text-blue-200 px-2 py-1 rounded-lg text-sm"
+                  className="rounded-lg bg-sky-100/80 px-2 py-1 text-sm text-sky-950/95 dark:border dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
                 >
                   #{tag}
                 </span>
               ))}
             </div>
 
-            {/* Post Actions */}
-            <div className="flex items-center justify-between pt-4 border-t border-white/10">
+            <div className="flex items-center justify-between border-t border-white/10 pt-4">
               <div className="flex items-center space-x-4">
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleLike(post.id)}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all ${
-                    post.isLiked 
-                      ? 'bg-green-500/20 text-green-400' 
-                      : 'bg-white/10 text-blue-100 hover:bg-white/20'
+                  className={`flex items-center space-x-2 rounded-lg px-3 py-2 transition-theme duration-300 ${
+                    post.isLiked
+                      ? 'bg-green-100 text-green-900 dark:text-emerald-300'
+                      : 'border border-slate-200/80 bg-white/88 text-slate-800 hover:bg-white dark:border dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10'
                   }`}
                 >
                   <ThumbsUp className="h-4 w-4" />
                   <span className="text-sm font-medium">{post.likes}</span>
                 </motion.button>
-                
+
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => openReply(post.id)}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-white/10 text-blue-100 hover:bg-white/20 transition-all"
+                  onClick={() => setReplyModal({ open: true, postId: post.id })}
+                  className="flex items-center space-x-2 rounded-lg border border-slate-200/80 bg-white/88 px-3 py-2 text-sky-950 transition-theme duration-300 hover:bg-white dark:border dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
                 >
                   <MessageCircle className="h-4 w-4" />
                   <span className="text-sm font-medium">{post.replies}</span>
@@ -366,7 +392,7 @@ const Community = () => {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleShare(post.id)}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-white/10 text-blue-100 hover:bg-white/20 transition-all"
+                  className="flex items-center space-x-2 rounded-lg border border-slate-200/80 bg-white/88 px-3 py-2 text-sky-950 transition-theme duration-300 hover:bg-white dark:border dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
                 >
                   <Share2 className="h-4 w-4" />
                   <span className="text-sm font-medium">Share</span>
@@ -376,10 +402,10 @@ const Community = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => openReply(post.id)}
-                className="bg-gradient-to-r from-blue-500 to-green-500 text-white font-bold py-2 px-4 rounded-lg hover:from-blue-600 hover:to-green-600 transition-all"
+                onClick={() => setReplyModal({ open: true, postId: post.id })}
+                className={`${primaryButton} px-4 py-2`}
               >
-                <Reply className="h-4 w-4 inline mr-2" />
+                <Reply className="h-4 w-4" />
                 Reply
               </motion.button>
             </div>
@@ -387,28 +413,27 @@ const Community = () => {
         ))}
       </div>
 
-      {/* New Post Modal */}
       <AnimatePresence>
         {showNewPost && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            className={modalBackdrop}
             onClick={() => setShowNewPost(false)}
           >
             <motion.div
               initial={{ scale: 0.8, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.8, y: 20 }}
-              className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 max-w-2xl w-full p-6"
+              className={`${modalPanel} max-w-2xl p-6`}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">Create New Post</h2>
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-sky-950 dark:text-white">Create New Post</h2>
                 <button
                   onClick={() => setShowNewPost(false)}
-                  className="text-white hover:text-red-400 transition-colors text-2xl"
+                  className="text-2xl text-slate-600 transition-colors hover:text-red-500 dark:text-slate-300"
                 >
                   ×
                 </button>
@@ -416,23 +441,23 @@ const Community = () => {
 
               <form onSubmit={handleSubmitPost} className="space-y-4">
                 <div>
-                  <label className="block text-white font-medium mb-2">Title</label>
+                  <label className="mb-2 block font-medium text-sky-950 dark:text-white">Title</label>
                   <input
                     type="text"
                     value={newPost.title}
-                    onChange={(e) => setNewPost({...newPost, title: e.target.value})}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-300 focus:outline-none focus:border-blue-400"
+                    onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
+                    className={inputClass}
                     placeholder="What's your question or topic?"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">Category</label>
+                  <label className="mb-2 block font-medium text-sky-950 dark:text-white">Category</label>
                   <select
                     value={newPost.category}
-                    onChange={(e) => setNewPost({...newPost, category: e.target.value})}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-blue-400"
+                    onChange={(e) => setNewPost({ ...newPost, category: e.target.value })}
+                    className={inputClass}
                   >
                     <option value="question">Question</option>
                     <option value="tips">Tips & Advice</option>
@@ -442,39 +467,32 @@ const Community = () => {
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">Content</label>
+                  <label className="mb-2 block font-medium text-sky-950 dark:text-white">Content</label>
                   <textarea
                     value={newPost.content}
-                    onChange={(e) => setNewPost({...newPost, content: e.target.value})}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-300 focus:outline-none focus:border-blue-400 h-32 resize-none"
+                    onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
+                    className={`${inputClass} h-32 resize-none`}
                     placeholder="Share your thoughts, questions, or project details..."
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-white font-medium mb-2">Tags (comma separated)</label>
+                  <label className="mb-2 block font-medium text-sky-950 dark:text-white">Tags (comma separated)</label>
                   <input
                     type="text"
                     value={newPost.tags}
-                    onChange={(e) => setNewPost({...newPost, tags: e.target.value})}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-300 focus:outline-none focus:border-blue-400"
+                    onChange={(e) => setNewPost({ ...newPost, tags: e.target.value })}
+                    className={inputClass}
                     placeholder="e.g., recycling, solar-energy, composting"
                   />
                 </div>
 
                 <div className="flex space-x-4 pt-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-3 px-6 rounded-xl hover:from-green-600 hover:to-blue-600 transition-all"
-                  >
+                  <button type="submit" className={`flex-1 ${primaryButton}`}>
                     Post to Community
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPost(false)}
-                    className="bg-white/10 text-white font-bold py-3 px-6 rounded-xl hover:bg-white/20 transition-all"
-                  >
+                  <button type="button" onClick={() => setShowNewPost(false)} className={secondaryButton}>
                     Cancel
                   </button>
                 </div>
@@ -484,36 +502,41 @@ const Community = () => {
         )}
       </AnimatePresence>
 
-      {/* Reply Modal */}
       <AnimatePresence>
         {replyModal.open && (
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className={modalBackdrop}
             onClick={() => setReplyModal({ open: false })}
           >
             <motion.div
-              initial={{ scale: 0.9, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 10 }}
-              className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 max-w-lg w-full p-6"
+              initial={{ scale: 0.9, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 10 }}
+              className={`${modalPanel} max-w-lg p-6`}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-white">Add a reply</h3>
-                <button className="text-white text-2xl" onClick={() => setReplyModal({ open: false })}>×</button>
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-xl font-bold text-sky-950 dark:text-white">Add a reply</h3>
+                <button className="text-2xl text-slate-600 dark:text-slate-300" onClick={() => setReplyModal({ open: false })}>
+                  ×
+                </button>
               </div>
               <form onSubmit={submitReply} className="space-y-4">
                 <textarea
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-300 focus:outline-none focus:border-blue-400 h-28 resize-none"
+                  className={`${inputClass} h-28 resize-none`}
                   placeholder="Write your reply..."
                   required
                 />
                 <div className="flex gap-3">
-                  <button type="submit" className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-3 px-6 rounded-xl hover:from-green-600 hover:to-blue-600 transition-all">
+                  <button type="submit" className={`flex-1 ${primaryButton}`}>
                     Post Reply
                   </button>
-                  <button type="button" onClick={() => setReplyModal({ open: false })} className="bg-white/10 text-white font-bold py-3 px-6 rounded-xl hover:bg-white/20 transition-all">
+                  <button type="button" onClick={() => setReplyModal({ open: false })} className={secondaryButton}>
                     Cancel
                   </button>
                 </div>
@@ -523,25 +546,24 @@ const Community = () => {
         )}
       </AnimatePresence>
 
-      {/* Community Guidelines */}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.5 }}
-        className="mt-8 bg-gradient-to-r from-green-500/20 to-blue-500/20 backdrop-blur-lg rounded-2xl p-6 border border-green-300/30"
+        className="mt-8 rounded-2xl border border-green-300/30 bg-gradient-to-r from-green-500/20 to-blue-500/20 p-6 backdrop-blur-lg transition-theme duration-300 dark:border-emerald-500/20 dark:from-emerald-500/10 dark:to-teal-500/10"
       >
-        <h2 className="text-2xl font-bold text-white mb-4">💚 Community Guidelines</h2>
-        <div className="grid md:grid-cols-3 gap-4 text-blue-100">
+        <h2 className="mb-4 text-2xl font-bold text-sky-950 dark:text-white">Community Guidelines</h2>
+        <div className="grid gap-4 text-sky-950/85 dark:text-slate-300 md:grid-cols-3">
           <div>
-            <h3 className="font-bold text-white mb-2">Be Respectful</h3>
+            <h3 className="mb-2 font-bold text-green-900 dark:text-white">Be Respectful</h3>
             <p className="text-sm">Treat all community members with kindness and respect.</p>
           </div>
           <div>
-            <h3 className="font-bold text-white mb-2">Share Knowledge</h3>
+            <h3 className="mb-2 font-bold text-green-900 dark:text-white">Share Knowledge</h3>
             <p className="text-sm">Help others by sharing your environmental expertise and experiences.</p>
           </div>
           <div>
-            <h3 className="font-bold text-white mb-2">Stay On Topic</h3>
+            <h3 className="mb-2 font-bold text-green-900 dark:text-white">Stay On Topic</h3>
             <p className="text-sm">Keep discussions focused on environmental and sustainability topics.</p>
           </div>
         </div>
