@@ -5,6 +5,14 @@ import { Eye, EyeOff, Leaf, Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword } from '../validators/auth';
 
+const validateName = (name: string): boolean => {
+  return name.trim().length >= 2;
+};
+
+const validateEmail = (email: string): boolean => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+};
+
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -41,12 +49,23 @@ const Auth = () => {
         }
         navigate('/dashboard');
       } else {
-        // Strong password validation — signup only
+        if (!validateName(formData.name)) {
+          setError('Please enter a valid name.');
+          return;
+        }
+
+        if (!validateEmail(formData.email)) {
+          setError('Please enter a valid email.');
+          return;
+        }
+
         const passwordValidationErrors = validatePassword(formData.password);
+
         if (passwordValidationErrors.length > 0) {
           setError(passwordValidationErrors.join('\n'));
           return;
         }
+
         if (formData.password !== formData.confirmPassword) {
           setError('Passwords do not match.');
           return;
