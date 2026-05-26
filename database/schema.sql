@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS game_scores (
   user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
   game_type TEXT NOT NULL,
   score INTEGER DEFAULT 0,
+  level_reached INTEGER,
   trash_collected INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -61,9 +62,16 @@ CREATE TABLE IF NOT EXISTS community_posts (
   title TEXT NOT NULL,
   content TEXT,
   likes INTEGER DEFAULT 0,
+  replies INTEGER DEFAULT 0,
+  author_name TEXT,
+  category TEXT,
+  tags TEXT[] DEFAULT '{}',
+  is_solved BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+-- replies is incremented by increment_post_replies() RPC (SECURITY DEFINER)
+-- no direct app writes to this column
 
 -- 6. Events table
 CREATE TABLE IF NOT EXISTS events (
@@ -71,6 +79,14 @@ CREATE TABLE IF NOT EXISTS events (
   title TEXT NOT NULL,
   description TEXT,
   event_date TIMESTAMP WITH TIME ZONE,
+  -- 'date' mirrors event_date; kept for frontend query compatibility
+  date TIMESTAMPTZ,
+  time TEXT,
+  type TEXT,
+  participants INTEGER DEFAULT 0,
+  max_participants INTEGER,
+  organizer TEXT,
+  image_url TEXT,
   location TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -99,7 +115,7 @@ CREATE POLICY "Users can update own data" ON users FOR UPDATE USING (auth.uid() 
 CREATE POLICY "Users can insert own data" ON users FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Users can manage own village" ON eco_villages FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage own scores" ON game_scores FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage own scores" ON game_scores FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can manage own challenges" ON challenges FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can manage own posts" ON community_posts FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Anyone can view events" ON events FOR SELECT USING (true);

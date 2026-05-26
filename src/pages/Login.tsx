@@ -9,7 +9,7 @@
  *
  * This file should be deleted once the migration is confirmed stable.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, LogIn, Mail, User, UserPlus } from 'lucide-react';
@@ -74,62 +74,6 @@ const Login = () => {
           <p className="mb-6 text-center text-sky-950/85 dark:text-slate-300">Save the planet, one action at a time</p>
 
           <AnimatePresence mode="wait">
-            {mode === 'select' && (
-              <motion.div
-                key="select"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-              >
-                <h2 className="mb-4 text-2xl font-bold text-sky-950 dark:text-white text-center">Select Profile</h2>
-
-                {users.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <p className="mb-4 text-sky-950/85 dark:text-slate-300">No profiles yet. Create one to get started!</p>
-                  </div>
-                ) : (
-                  <div className="mb-6 space-y-3">
-                    {users.map((u) => (
-                      <div
-                        key={u.email}
-                        className="flex items-center justify-between rounded-xl border border-white/20 bg-white/10 p-4 transition-theme duration-300 hover:bg-white/20 dark:border-white/10 dark:bg-white/5 dark:hover:border-emerald-400/30 dark:hover:bg-white/10"
-                      >
-                        <button
-                          onClick={() => {
-                            setSelectedEmail(u.email);
-                            setMode('login');
-                          }}
-                          className="flex flex-1 items-center gap-3 text-left"
-                        >
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-green-400 to-blue-500 font-bold text-white dark:from-emerald-500 dark:to-teal-500">
-                            {u.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sky-950 dark:text-white">{u.name}</p>
-                            <p className="text-sm text-sky-950/80 dark:text-slate-400">{u.email}</p>
-                          </div>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(u.email)}
-                          className="rounded-lg p-2 text-red-500 transition-theme duration-300 hover:bg-red-500/10 dark:text-red-400"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <button
-                  onClick={() => setMode('register')}
-                  className={`${primaryButton} w-full`}
-                >
-                  <UserPlus className="h-5 w-5" />
-                  Create New Profile
-                </button>
-              </motion.div>
-            )}
-
             {mode === 'login' && (
               <motion.div
                 key="login"

@@ -258,70 +258,15 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 1. Go to [supabase.com](https://supabase.com/) and create a new project.
 
-2. In your project dashboard, navigate to **SQL Editor** and run the following schema to create the required tables:
+2. In your project dashboard, navigate to **SQL Editor** and run the SQL files in the following order in your Supabase SQL Editor:
+
+   1. `database/schema.sql`
+   2. `database/gamification_schema.sql`
 
 ```sql
--- Users profile table (extends Supabase auth.users)
-create table public.users (
-  id uuid references auth.users(id) primary key,
-  username text unique not null,
-  points integer default 0,
-  level integer default 1,
-  badges text[] default '{}',
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
--- Eco Village state per user
-create table public.eco_villages (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.users(id) on delete cascade,
-  upgrades jsonb default '{}',
-  air_quality integer default 0,
-  water_clarity integer default 0,
-  biodiversity integer default 0,
-  updated_at timestamptz default now()
-);
-
--- Game scores and leaderboard
-create table public.game_scores (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.users(id) on delete cascade,
-  game_type text not null,
-  score integer not null,
-  level_reached integer,
-  created_at timestamptz default now()
-);
-
--- Daily challenges
-create table public.challenges (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.users(id) on delete cascade,
-  challenge_type text not null,
-  completed boolean default false,
-  completed_at timestamptz,
-  created_at timestamptz default now()
-);
-
--- Community posts
-create table public.community_posts (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.users(id) on delete cascade,
-  content text not null,
-  topic text,
-  likes integer default 0,
-  created_at timestamptz default now()
-);
-
--- Events
-create table public.events (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  description text,
-  event_date timestamptz,
-  location text,
-  created_at timestamptz default now()
-);
+-- See database/schema.sql for the full schema.
+-- See database/gamification_schema.sql for XP, streaks, badges, and bingo.
+-- Run both files in order in your Supabase SQL Editor.
 ```
 
 3. Enable **Row Level Security (RLS)** on each table in the Supabase dashboard under **Authentication → Policies**.
