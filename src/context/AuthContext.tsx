@@ -28,9 +28,63 @@ export const AuthProvider: React.FC<{
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const ensureUserProfileExists = async (supabaseUser: any) => {
+      try {
+        const { data: profile, error: profileErr } = await supabase
+          .from("users")
+          .select("id")
+          .eq("id", supabaseUser.id)
+          .maybeSingle();
+
+        if (!profileErr && !profile) {
+          console.log("[EcoPlay] Public profile missing. Creating on-the-fly...");
+          await supabase.from("users").insert([
+            {
+              id: supabaseUser.id,
+              email: supabaseUser.email || "",
+              name: supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "EcoPlayer",
+              points: 0,
+              level: 1,
+              eco_score: 0,
+              avatar_url: supabaseUser.user_metadata?.avatar_url || null
+            },
+          ]);
+        }
+
+        const { data: village, error: villageErr } = await supabase
+          .from("eco_villages")
+          .select("id")
+          .eq("user_id", supabaseUser.id)
+          .maybeSingle();
+
+        if (!villageErr && !village) {
+          console.log("[EcoPlay] Eco village record missing. Initializing on-the-fly...");
+          await supabase.from("eco_villages").insert([
+            {
+              user_id: supabaseUser.id,
+              air_quality: 20,
+              water_quality: 20,
+              biodiversity: 10,
+              trees: 0,
+              solar_panels: 0,
+              water_filters: 0,
+              pollution_level: 80,
+            },
+          ]);
+        }
+      } catch (err) {
+        console.error("[EcoPlay] Error self-healing profile:", err);
+      }
+    };
+
     // Restore existing session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ? toAppUser(session.user) : null);
+      if (session?.user) {
+        setUser(toAppUser(session.user));
+        ensureUserProfileExists(session.user);
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
 
@@ -40,6 +94,7 @@ export const AuthProvider: React.FC<{
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(toAppUser(session.user));
+        ensureUserProfileExists(session.user);
       } else {
         setUser(null);
       }

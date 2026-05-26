@@ -156,11 +156,20 @@ $$;
 -- ─── RPC 6: Community Post Interactions ────────────────────────
 CREATE OR REPLACE FUNCTION increment_post_likes(p_post_id UUID, p_increment BOOLEAN)
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_user_id UUID := auth.uid();
 BEGIN
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
   IF p_increment THEN
-    UPDATE community_posts SET likes = COALESCE(likes, 0) + 1 WHERE id = p_post_id;
+    INSERT INTO community_post_likes (user_id, post_id)
+    VALUES (v_user_id, p_post_id)
+    ON CONFLICT DO NOTHING;
   ELSE
-    UPDATE community_posts SET likes = GREATEST(0, COALESCE(likes, 0) - 1) WHERE id = p_post_id;
+    DELETE FROM community_post_likes
+    WHERE user_id = v_user_id AND post_id = p_post_id;
   END IF;
 END;
 $$;
@@ -169,6 +178,28 @@ CREATE OR REPLACE FUNCTION increment_post_replies(p_post_id UUID)
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   UPDATE community_posts SET replies = COALESCE(replies, 0) + 1 WHERE id = p_post_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_community_stats()
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_members_count INT;
+  v_posts_count INT;
+  v_solved_count INT;
+  v_projects_count INT;
+BEGIN
+  SELECT COUNT(*) INTO v_members_count FROM users;
+  SELECT COUNT(*) INTO v_posts_count FROM community_posts;
+  SELECT COUNT(DISTINCT id) INTO v_solved_count FROM community_posts WHERE is_solved = TRUE AND category = 'question';
+  SELECT COUNT(DISTINCT id) INTO v_projects_count FROM community_posts WHERE category = 'project';
+
+  RETURN jsonb_build_object(
+    'members_count', v_members_count,
+    'posts_count', v_posts_count,
+    'solved_count', v_solved_count,
+    'projects_count', v_projects_count
+  );
 END;
 $$;
 

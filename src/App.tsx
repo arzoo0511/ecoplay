@@ -8,6 +8,7 @@ import Auth from './pages/Auth';
 
 const Bingo = React.lazy(() => import('./pages/Bingo'));
 const Community = React.lazy(() => import('./pages/Community'));
+const PostDetail = React.lazy(() => import('./pages/PostDetail'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const EcoVillage = React.lazy(() => import('./pages/EcoVillage'));
 const Events = React.lazy(() => import('./pages/Events'));
@@ -59,6 +60,7 @@ export default function App() {
                 <Route path="/learn" element={<Protected><Learn /></Protected>} />
                 <Route path="/bingo" element={<Protected><Bingo /></Protected>} />
                 <Route path="/community" element={<Protected><Community /></Protected>} />
+                <Route path="/community/post/:postId" element={<Protected><PostDetail /></Protected>} />
                 <Route path="/events" element={<Protected><Events /></Protected>} />
 
                 {/* Fallback */}
