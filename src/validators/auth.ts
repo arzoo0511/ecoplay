@@ -1,8 +1,3 @@
-/**
- * Validates a registration password against all strength requirements.
- * Returns an array of human-readable error messages for each unmet rule.
- * An empty array means the password satisfies all requirements.
- */
 export function validatePassword(password: string): string[] {
   const errors: string[] = [];
 
@@ -22,7 +17,7 @@ export function validatePassword(password: string): string[] {
     errors.push('Password must contain at least one numeric digit');
   }
 
-  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+  if (!/[@#$%^&*!()\-_=+\[\]{};:'",.<>?/\\|`~]/.test(password)) {
     errors.push('Password must contain at least one special character');
   }
 
