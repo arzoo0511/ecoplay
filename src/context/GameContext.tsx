@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { loadState, saveState } from '../services/persistence';
 import { awardXP } from '../lib/gamification';
 import { initPreferences, RecommendedChallenge } from '../services/recommendation';
+import { dbFunctions } from '../lib/supabase';
 
 
 // Define your GameState shape
@@ -40,9 +41,14 @@ export interface GameState {
   };
   notifications: string[];
   lastChallengeRefresh: number;
+  communityEvents?: {
+    events: any[];
+    participation: Record<string, number>;
+    history: any[];
+  };
 }
 
-export const CHALLENGE_POOL = [
+const CHALLENGE_POOL = [
   { title: 'Plant a Tree', description: 'Add a tree to your eco village.', points: 50 },
   { title: 'Collect Ocean Trash', description: 'Play a cleanup round.', points: 40 },
   { title: 'Learn Sustain', description: 'Watch an educational video in the Learn section.', points: 30 },
@@ -52,7 +58,7 @@ export const CHALLENGE_POOL = [
   { title: 'Quiz Whiz', description: 'Complete a sustainability quiz.', points: 35 },
 ];
 
-export function generateDailyChallenges(seedTime: number = Date.now()): GameState['dailyChallenges'] {
+function generateDailyChallenges(seedTime: number = Date.now()): GameState['dailyChallenges'] {
   const shuffled = [...CHALLENGE_POOL].sort(() => 0.5 - Math.random());
   return shuffled.slice(0, 3).map((c, i) => ({
     id: `c_${seedTime}_${i}`,
@@ -90,7 +96,12 @@ const initialState: GameState = {
     perfectCleanups: 0
   },
   notifications: [],
-  lastChallengeRefresh: 0
+  lastChallengeRefresh: 0,
+  communityEvents: {
+    events: [],
+    participation: {},
+    history: [],
+  }
 };
 
 type GameContextValue = {
@@ -323,6 +334,46 @@ function reducer(
         categoryPreferences: action.payload.categoryPreferences || state.categoryPreferences || initPreferences(),
         recommendedChallenges: action.payload.recommendedChallenges || state.recommendedChallenges || []
       };
+    case 'SET_COMMUNITY_EVENTS':
+      return {
+        ...state,
+        communityEvents: {
+          events: action.payload.events,
+          participation: action.payload.participation,
+          history: state.communityEvents?.history || [],
+        },
+      };
+    case 'SET_COMMUNITY_HISTORY':
+      return {
+        ...state,
+        communityEvents: {
+          events: state.communityEvents?.events || [],
+          participation: state.communityEvents?.participation || {},
+          history: action.payload.history,
+        },
+      };
+    case 'UPDATE_EVENT_CONTRIBUTION':
+      const updatedParticipation = {
+        ...(state.communityEvents?.participation || {}),
+        [action.payload.eventId]: action.payload.contribution,
+      };
+      const updatedEvents = (state.communityEvents?.events || []).map((e) => {
+        if (e.id === action.payload.eventId) {
+          return {
+            ...e,
+            communityProgress: action.payload.communityProgress,
+          };
+        }
+        return e;
+      });
+      return {
+        ...state,
+        communityEvents: {
+          events: updatedEvents,
+          participation: updatedParticipation,
+          history: state.communityEvents?.history || [],
+        },
+      };
     default:
       return state;
   }
@@ -398,6 +449,35 @@ export const GameProvider: React.FC<{
 
     return () => clearTimeout(t);
   }, [state, user]);
+
+  // Award login bonus XP once per session
+  React.useEffect(() => {
+    if (!user) return;
+
+    const fetchCommunityData = async () => {
+      try {
+        // Fetch events and current user participation
+        const { events, participation } = await dbFunctions.getCommunityEvents(user.id);
+        dispatchBase({
+          type: 'SET_COMMUNITY_EVENTS',
+          payload: { events, participation },
+        });
+
+        // Fetch user history
+        const history = await dbFunctions.getEventHistory(user.id);
+        dispatchBase({
+          type: 'SET_COMMUNITY_HISTORY',
+          payload: { history },
+        });
+      } catch (err) {
+        console.error('Failed to sync community events from Supabase:', err);
+      }
+    };
+
+    fetchCommunityData();
+    const interval = setInterval(fetchCommunityData, 30000); // sync every 30 seconds
+    return () => clearInterval(interval);
+  }, [user]);
 
   // Award login bonus XP once per session
   React.useEffect(() => {
@@ -493,6 +573,7 @@ export const GameProvider: React.FC<{
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useGame = () => {
   const ctx = React.useContext(GameContext);
 

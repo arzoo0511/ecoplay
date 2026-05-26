@@ -243,22 +243,22 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-green-50">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 w-full max-w-md"
+        className="bg-white rounded-2xl border-2 border-gray-200 shadow-2xl p-8 w-full max-w-md"
       >
         {/* Header */}
         <div className="text-center mb-8">
           <motion.div
             whileHover={{ rotate: 360 }}
             transition={{ duration: 0.8 }}
-            className="bg-green-500 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center"
+            className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-lg"
           >
             <Leaf className="h-8 w-8 text-white" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             {isLogin ? 'Welcome Back!' : 'Join EcoPlay'}
           </h1>
           {/* HIGH CONTRAST SUBTITLE - WCAG AAA Compliant (7.5:1+) */}
@@ -291,7 +291,7 @@ const Auth = () => {
                 />
               </div>
               {fieldErrors.name && (
-                <p id="name-error" role="alert" className="text-red-300 text-sm mt-2">
+                <p id="name-error" role="alert" className="text-red-600 text-sm mt-2">
                   {fieldErrors.name}
                 </p>
               )}
@@ -319,12 +319,13 @@ const Auth = () => {
               />
             </div>
             {fieldErrors.email && (
-              <p id="email-error" role="alert" className="text-red-300 text-sm mt-2" >
+              <p id="email-error" role="alert" className="text-red-600 text-sm mt-2">
                 {fieldErrors.email}
               </p>
             )}
           </div>
-
+          
+          <div> 
             <label htmlFor="password" className="block text-gray-800 font-semibold text-sm mb-2">
               Password
             </label>
@@ -338,19 +339,19 @@ const Auth = () => {
                 onChange={handleInputChange}
                 aria-invalid={!!fieldErrors.password}
                 aria-describedby={fieldErrors.password ? 'password-error' : undefined}
-                className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+                className="w-full pl-10 pr-12 py-3 bg-white border-2 border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
                 placeholder="Enter your password"
                 aria-label="Password"
                 required
               />
               <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 rounded p-1 transition-colors"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
+  type="button"
+  onClick={() => setShowPassword(!showPassword)}
+  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 rounded p-1 transition-colors"
+  aria-label={showPassword ? 'Hide password' : 'Show password'}
+>
+  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+</button>
             </div>
             {!isLogin && (
               <p className="mt-2 text-sm text-gray-600">
@@ -358,53 +359,47 @@ const Auth = () => {
               </p>
             )}
             {!isLogin && formData.password && (
-              <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
-                <div className="space-y-2">
-                  {passwordValidationStatus.map((req, index) => (
-                    <div key={index} className="flex items-center gap-2 text-sm">
-                      {req.met ? (
-                        <Check className="h-4 w-4 flex-shrink-0 text-green-500" />
-                      ) : (
-                        <X className="h-4 w-4 flex-shrink-0 text-red-500" />
-                      )}
-                      <span className={req.met ? 'text-green-700' : 'text-gray-600'}>
-                        {req.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+<div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+  <div className="space-y-2">
+    {passwordValidationStatus.map((req, index) => (
+      <div key={index} className="flex items-center gap-2 text-sm">
+        {req.met ? (
+          <Check className="h-4 w-4 flex-shrink-0 text-green-500" />
+        ) : (
+          <X className="h-4 w-4 flex-shrink-0 text-red-500" />
+        )}
 
-            {isLogin && (
-              <div className="flex justify-end -mt-2">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!formData.email) {
-                      setError('Please enter your email first.');
-                      return;
-                    }
+        <span className={req.met ? 'text-green-700' : 'text-gray-600'}>
+          {req.label}
+        </span>
+      </div>
+    ))}
+  </div>
 
-                    setLoading(true);
+  <div className="mt-3">
+    <p className="text-sm text-gray-600">
+      Password Strength:
+      <span
+        className={`ml-2 font-semibold ${
+          passwordStrength === 'Weak'
+            ? 'text-red-400'
+            : passwordStrength === 'Medium'
+            ? 'text-yellow-400'
+            : 'text-green-400'
+        }`}
+      >
+        {passwordStrength}
+      </span>
+    </p>
+  </div>
 
-                    const result = await forgotPassword(formData.email);
-
-                    if (!result.success) {
-                      setError(result.error || 'Failed to send reset email.');
-                    } else {
-                      setError('');
-                      alert('Password reset email sent! Check your inbox.');
-                    }
-
-                    setLoading(false);
-                  }}
-                  className="text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
-                >
-                  Forgot Password?
-                </button>
-              </div>
-            )}
+</div>
+{fieldErrors.password && (
+  <p id="password-error" role="alert" className="text-red-600 text-sm mt-2">
+    {fieldErrors.password}
+  </p>
+)}
+          )}
 
             {!isLogin && (
               <div>
@@ -447,8 +442,37 @@ const Auth = () => {
                   </p>
                 )}
               </div>
-            )}
-            
+)}
+
+{isLogin && (
+  <div className="flex justify-end -mt-2">
+    <button
+      type="button"
+      onClick={async () => {
+        if (!formData.email) {
+          setError('Please enter your email first.');
+          return;
+        }
+
+        setLoading(true);
+
+        const result = await forgotPassword(formData.email);
+
+        if (!result.success) {
+          setError(result.error || 'Failed to send reset email.');
+        } else {
+          setError('');
+          alert('Password reset email sent! Check your inbox.');
+        }
+
+        setLoading(false);
+      }}
+      className="text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
+    >
+      Forgot Password?
+    </button>
+  </div>
+)}
 
                     {error && (
             <motion.div
@@ -462,6 +486,7 @@ const Auth = () => {
             </motion.div>
           )}
 
+          {/* SMOOTH GRADIENT - Properly centered text */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -481,7 +506,7 @@ const Auth = () => {
                   !!fieldErrors.confirmPassword
                 ))
             }
-            className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-3 px-6 rounded-xl hover:from-green-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 text-white font-bold py-3 px-6 rounded-xl hover:from-green-600 hover:via-emerald-600 hover:to-green-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center"
           >
             {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
           </motion.button>
@@ -516,26 +541,6 @@ const Auth = () => {
             {isLogin ? 'Sign up here' : 'Sign in here'}
           </button>
         </div>
-
-        {/* Toggle - HIGH CONTRAST FOOTER TEXT */}
-        <div className="mt-6 pt-6 border-t-2 border-gray-200">
-          <p className="text-gray-700 font-medium text-center">
-
-            {isLogin ? "Don't have an account?" : 'Already have an account?'}
-          </p>
-          <button
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setError('');
-              setFieldErrors({ email: '', password: '', name: '', confirmPassword: '' });//Clearing error while toggle
-              setFormData({ email: '', password: '', name: '', confirmPassword: '' });  
-            }}
-            className="w-full text-green-600 hover:text-green-700 font-semibold mt-3 transition-colors py-2 rounded-lg hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500"
-            aria-label={isLogin ? 'Switch to sign up' : 'Switch to sign in'}
-          >
-            {isLogin ? 'Sign up here' : 'Sign in here'}
-          </button>
-        </div >
       </motion.div >
     </div >
   );
