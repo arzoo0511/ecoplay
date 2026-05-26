@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Leaf, Mail, Lock, User, Check, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getPasswordValidationErrors } from '../validators/auth';
+import ThemeToggle from '../components/ThemeToggle';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -243,11 +244,17 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-green-50">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
+      <button 
+        className="absolute top-4 right-4"
+        title="Toggle theme"
+      >
+        <ThemeToggle />
+      </button>
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl border-2 border-gray-200 shadow-2xl p-8 w-full max-w-md"
+        className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-gray-200 dark:border-slate-700 shadow-2xl p-8 w-full max-w-md"
       >
         {/* Header */}
         <div className="text-center mb-8">
@@ -258,11 +265,11 @@ const Auth = () => {
           >
             <Leaf className="h-8 w-8 text-white" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             {isLogin ? 'Welcome Back!' : 'Join EcoPlay'}
           </h1>
-          {/* HIGH CONTRAST SUBTITLE - WCAG AAA Compliant (7.5:1+) */}
-          <p className="text-gray-700 font-medium text-base">
+          {/* ACCESSIBILITY FIX: Changed from text-blue-100 to text-gray-700 for 7.5:1 contrast ratio */}
+          <p className="text-gray-700 dark:text-gray-300 font-medium">
             {isLogin ? 'Continue your environmental journey' : 'Start your eco-friendly adventure'}
           </p>
         </div>
