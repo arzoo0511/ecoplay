@@ -202,7 +202,7 @@ async function checkAndAwardBadges(
   return candidates;
 }
 
-// ─── Stats Fetchers ───────────────────────────────────────────
+// --- Stats Fetchers ---
 
 export async function getUserStats(userId: string): Promise<UserStats | null> {
   const { data, error } = await supabase
@@ -214,10 +214,10 @@ export async function getUserStats(userId: string): Promise<UserStats | null> {
   if (error || !data) return null;
 
   return {
-    userId:          data.user_id,
-    totalXP:         data.total_xp,
-    currentLevel:    data.current_level,
-    xpToNextLevel:   data.xp_to_next_level,
+    userId: data.user_id,
+    totalXP: data.total_xp,
+    currentLevel: data.current_level,
+    xpToNextLevel: data.xp_to_next_level,
     activitiesCount: data.activities_count,
   };
 }
@@ -238,12 +238,21 @@ export async function getUserStreak(userId: string): Promise<UserStreak> {
 }
 
 export async function getUserBadges(userId: string) {
-  const { data, error } = await supabase
-    .from('user_badges')
-    .select('badge_key, earned_at, badges(name, description, icon)')
-    .eq('user_id', userId)
-    .order('earned_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('user_badges')
+      .select('badge_key, earned_at, badges(name, description, icon)')
+      .eq('user_id', userId)
+      .order('earned_at', { ascending: false });
 
-  if (error) throw error;
-  return data ?? [];
+    if (error) {
+      console.error('[EcoPlay] getUserBadges failed:', error);
+      return [];
+    }
+
+    return data ?? [];
+  } catch (error) {
+    console.error('[EcoPlay] getUserBadges crashed:', error);
+    return [];
+  }
 }

@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGamification } from '../hooks/useGamification';
 import { RecommendedChallenges } from '../components/RecommendedChallenges';
+import { CommunityProgress } from '../components/CommunityProgress';
 
 
 // ─── XP Panel Component ───────────────────────────────────────
@@ -124,7 +125,7 @@ const XPPanel: React.FC<{ authUser: any }> = ({ authUser }) => {
           <div className="mt-4 pt-4 border-t border-white/10">
             <p className="text-xs text-white/50 mb-2">Your Badges</p>
             <div className="flex flex-wrap gap-2">
-              {badges.slice(0, 6).map((b: any) => (
+              {badges.slice(0, 6).map((b: { badge_key: string; badges?: { name?: string; icon?: string } }) => (
                 <span key={b.badge_key} title={b.badges?.name} className="text-xl cursor-default">
                   {b.badges?.icon}
                 </span>
@@ -391,6 +392,13 @@ const Dashboard = () => {
           );
         })}
       </motion.div>
+
+      {/* Community Events Progress Widget */}
+      {authUser?.id && (
+        <motion.div variants={itemVariants} className="mb-8">
+          <CommunityProgress userId={authUser.id} />
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Environment Status */}

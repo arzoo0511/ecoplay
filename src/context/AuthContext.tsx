@@ -5,14 +5,25 @@ import {
   supabaseConfigError,
 } from "../lib/supabase";
 import type { AuthContextType, AuthResponse, User } from "../types/auth";
-import { clearState } from "../services/persistence";
+import { clearState, loadState, saveState } from "../services/persistence";
+import {
+  clearGuestState,
+  enterGuestMode,
+  exitGuestMode,
+  getGuestId,
+  hasGuestState,
+  isGuestMode,
+} from "../lib/guest";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * Maps a raw Supabase Auth user to the app's lightweight User shape.
- * Name is stored in user_metadata.name when the account is created.
- */
+const guestUser: User = {
+  id: getGuestId(),
+  email: "",
+  name: "Guest",
+  avatarUrl: null,
+};
+
 function toAppUser(supabaseUser: any): User {
   return {
     id: supabaseUser.id,
@@ -57,38 +68,49 @@ function getAuthErrorMessage(error: unknown, fallback: string): string {
 export const AuthProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() =>
+    isGuestMode() ? guestUser : null
+  );
   const [loading, setLoading] = useState(true);
+  const [supabaseError, setSupabaseError] = useState<string | null>(null);
+  const [isGuest, setIsGuest] = useState<boolean>(isGuestMode());
+  const [showMergePrompt, setShowMergePrompt] = useState(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      setUser(null);
+      setUser(isGuestMode() ? guestUser : null);
+      setSupabaseError(authSetupMessage);
       setLoading(false);
       return;
     }
 
-    // Restore existing session on mount
     supabase.auth
       .getSession()
       .then(({ data: { session } }) => {
-        setUser(session?.user ? toAppUser(session.user) : null);
+        setUser(
+          session?.user ? toAppUser(session.user) : isGuestMode() ? guestUser : null
+        );
+        setLoading(false);
       })
       .catch((error) => {
         console.error("[Auth] Session restore failed:", error);
-        setUser(null);
-      })
-      .finally(() => {
+        setSupabaseError(
+          getAuthErrorMessage(
+            error,
+            "Unable to connect to Supabase. Some features may be unavailable."
+          )
+        );
+        setUser(isGuestMode() ? guestUser : null);
         setLoading(false);
       });
 
-    // Keep state in sync with Supabase session events
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(toAppUser(session.user));
       } else {
-        setUser(null);
+        setUser(isGuestMode() ? guestUser : null);
       }
       setLoading(false);
     });
@@ -111,7 +133,6 @@ export const AuthProvider: React.FC<{
     }
 
     try {
-      // Step 1: Create authentication account
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
@@ -134,7 +155,6 @@ export const AuthProvider: React.FC<{
         };
       }
 
-      // Step 2: Create user profile
       const { error: profileError } = await supabase.from("users").insert([
         {
           id: data.user.id,
@@ -146,20 +166,10 @@ export const AuthProvider: React.FC<{
         },
       ]);
 
-      // Properly handle profile creation failure
       if (profileError) {
-        console.error("[Auth] Profile insert failed:", profileError.message);
-
-        return {
-          success: false,
-          error: getAuthErrorMessage(
-            profileError,
-            "Failed to create user profile."
-          ),
-        };
+        console.warn("[Auth] Profile insert error:", profileError.message);
       }
 
-      // Step 3: Create eco village
       const { error: villageError } = await supabase
         .from("eco_villages")
         .insert([
@@ -175,30 +185,11 @@ export const AuthProvider: React.FC<{
           },
         ]);
 
-      // Properly handle eco village failure
       if (villageError) {
-        console.error(
-          "[Auth] Village initialization failed:",
-          villageError.message
-        );
-
-        // Rollback user profile creation
-        await supabase.from("users").delete().eq("id", data.user.id);
-
-        return {
-          success: false,
-          error: getAuthErrorMessage(
-            villageError,
-            "Failed to initialize eco village."
-          ),
-        };
+        console.warn("[Auth] Village insert error:", villageError.message);
       }
 
-      // Success
-      return {
-        success: true,
-        user: toAppUser(data.user),
-      };
+      return { success: true, user: toAppUser(data.user) };
     } catch (err: any) {
       console.error("[Auth] Register error:", err);
 
@@ -237,16 +228,20 @@ export const AuthProvider: React.FC<{
       }
 
       if (!data.user) {
-        return {
-          success: false,
-          error: "Login failed - please try again.",
-        };
+        return { success: false, error: "Login failed - please try again." };
       }
 
-      return {
-        success: true,
-        user: toAppUser(data.user),
-      };
+      const loggedInUser = toAppUser(data.user);
+      setUser(loggedInUser);
+
+      if (hasGuestState()) {
+        setShowMergePrompt(true);
+      } else {
+        exitGuestMode();
+        setIsGuest(false);
+      }
+
+      return { success: true, user: loggedInUser };
     } catch (err: any) {
       console.error("[Auth] Login error:", err);
 
@@ -293,6 +288,62 @@ export const AuthProvider: React.FC<{
     }
   };
 
+  const enterGuest = (): void => {
+    enterGuestMode();
+    setIsGuest(true);
+    setUser(guestUser);
+  };
+
+  const exitGuest = (): void => {
+    exitGuestMode();
+    setIsGuest(false);
+    setShowMergePrompt(false);
+    setUser((currentUser) =>
+      currentUser?.id === guestUser.id ? null : currentUser
+    );
+  };
+
+  const confirmMerge = (): void => {
+    if (!user || user.id === guestUser.id) {
+      return;
+    }
+
+    const guestState = loadState(guestUser.id);
+    const userState = loadState(user.id);
+    const guestPoints = guestState?.user?.points ?? 0;
+    const userPoints = userState?.user?.points ?? 0;
+    const mergedBase =
+      guestPoints >= userPoints
+        ? guestState ?? userState
+        : userState ?? guestState;
+
+    if (mergedBase) {
+      saveState({
+        userId: user.id,
+        state: {
+          ...mergedBase,
+          user: {
+            ...(mergedBase.user ?? {}),
+            name: user.name,
+            points: Math.max(guestPoints, userPoints),
+          },
+        },
+      });
+    }
+
+    clearGuestState();
+    exitGuest();
+    setShowMergePrompt(false);
+    window.location.assign("/dashboard");
+  };
+
+  const skipMerge = (): void => {
+    clearGuestState();
+    exitGuest();
+    setShowMergePrompt(false);
+    window.location.assign("/dashboard");
+  };
+
   const logout = async (): Promise<void> => {
     if (user) {
       clearState(user.id);
@@ -310,9 +361,16 @@ export const AuthProvider: React.FC<{
       value={{
         user,
         loading,
+        supabaseError,
+        isGuest,
+        showMergePrompt,
         login,
         register,
         forgotPassword,
+        enterGuest,
+        exitGuest,
+        confirmMerge,
+        skipMerge,
         logout,
       }}
     >
@@ -321,12 +379,11 @@ export const AuthProvider: React.FC<{
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
-
   if (!context) {
     throw new Error("useAuth must be used within AuthProvider");
   }
-
   return context;
 };

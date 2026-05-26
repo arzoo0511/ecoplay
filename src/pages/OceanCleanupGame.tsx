@@ -63,6 +63,7 @@ const OceanCleanupGame = () => {
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { totalCollectedRef.current = totalCollected; }, [totalCollected]);
 
+
   // Generate single trash item
   const generateSingleTrash = useCallback(() => {
     const types = Object.keys(TRASH_TYPES) as (keyof typeof TRASH_TYPES)[];
