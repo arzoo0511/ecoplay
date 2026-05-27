@@ -6,6 +6,8 @@ import { GameProvider } from './context/GameContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { validateEnv } from './config/validateEnv';
 import Layout from './components/Layout';
+import useSyncStatus from './hooks/useSyncStatus';
+import OfflineBanner from './components/status/OfflineBanner';
 
 import Auth from './pages/Auth';
 
