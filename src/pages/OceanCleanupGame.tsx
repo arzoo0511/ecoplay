@@ -59,6 +59,8 @@ useEffect(() => {
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const mousePos = useRef({ x: 0, y: 0 });
   const fishRef = useRef<Fish[]>([]);
+  const fishDomRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const lastCollisionTime = useRef(0);
 
   useEffect(() => {
     fishRef.current = fish;
@@ -156,6 +158,11 @@ useEffect(() => {
   const handleFishCollision = useCallback(() => {
     if (!gameActive) return;
     
+    const now = Date.now();
+    // 1-second cooldown on fish collision to prevent instant score drain at 60fps
+    if (now - lastCollisionTime.current < 1000) return;
+    lastCollisionTime.current = now;
+
     setScore(prev => Math.max(0, prev - 5));
     setCombo(0);
     
@@ -164,7 +171,7 @@ useEffect(() => {
     if (gameArea) {
       gameArea.style.border = '3px solid red';
       setTimeout(() => {
-        gameArea.style.border = '';
+        if (gameArea) gameArea.style.border = '';
       }, 200);
     }
   }, [gameActive]);
@@ -184,18 +191,27 @@ useEffect(() => {
   useEffect(() => {
     if (!gameActive) return;
 
-    const fishInterval = setInterval(() => {
+    let animationFrameId: number;
+    let lastTime = performance.now();
+
+    const gameLoop = (time: number) => {
+      // Calculate delta time
+      const deltaTime = time - lastTime;
+      const speedFactor = deltaTime / 50; // Normalize to old 50ms intervals
+      lastTime = time;
+
       let collisionOccurred = false;
       const currentFish = fishRef.current;
       
-      const newFish = currentFish.map(f => {
-        let newX = f.x + (f.speed * f.direction * 0.5);
+      for (let i = 0; i < currentFish.length; i++) {
+        const f = currentFish[i];
+        let newX = f.x + (f.speed * f.direction * 0.5 * speedFactor);
         let newDirection = f.direction;
         
         // Bounce off edges
         if (newX > 95 || newX < 5) {
           newDirection = -f.direction;
-          newX = f.x + (f.speed * newDirection * 0.5);
+          newX = f.x + (f.speed * newDirection * 0.5 * speedFactor);
         }
 
         // Check collision with cursor
@@ -206,21 +222,28 @@ useEffect(() => {
           collisionOccurred = true;
         }
 
-        return {
-          ...f,
-          x: newX,
-          direction: newDirection
-        };
-      });
+        // Mutate ref directly, bypassing React state
+        f.x = newX;
+        f.direction = newDirection;
 
-      setFish(newFish);
+        // Mutate DOM directly
+        const domEl = fishDomRefs.current[i];
+        if (domEl) {
+          domEl.style.left = `${newX}%`;
+          domEl.style.transform = newDirection > 0 ? 'scaleX(1)' : 'scaleX(-1)';
+        }
+      }
 
       if (collisionOccurred) {
         handleFishCollision();
       }
-    }, 50);
 
-    return () => clearInterval(fishInterval);
+      animationFrameId = requestAnimationFrame(gameLoop);
+    };
+
+    animationFrameId = requestAnimationFrame(gameLoop);
+
+    return () => cancelAnimationFrame(animationFrameId);
   }, [gameActive, handleFishCollision]);
 
   const endGame = useCallback(() => {
@@ -426,9 +449,10 @@ useEffect(() => {
           }}
         >
           {/* Fish Obstacles */}
-          {gameActive && fish.map((f) => (
-            <motion.div
+          {gameActive && fish.map((f, index) => (
+            <div
               key={f.id}
+              ref={(el) => (fishDomRefs.current[index] = el)}
               className="absolute text-4xl pointer-events-none z-10"
               style={{
                 left: `${f.x}%`,
@@ -437,7 +461,7 @@ useEffect(() => {
               }}
             >
               🐠
-            </motion.div>
+            </div>
           ))}
 
           {/* Trash Items */}
