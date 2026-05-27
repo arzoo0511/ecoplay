@@ -25,7 +25,12 @@ import { CommunityProgress } from '../components/CommunityProgress';
 // ─── XP Panel Component ───────────────────────────────────────
 
 const XPPanel: React.FC<{ authUser: any }> = ({ authUser }) => {
-  const { stats, streak, badges, leaderboard, userRank, loading } = useGamification(authUser?.id ?? null);
+  const { stats, streak, badges, leaderboard, userRank } = useGamification(authUser?.id ?? null);
+
+const loading =
+  stats === null ||
+  streak === null ||
+  leaderboard === null;
 
   const streakEmoji = (s: number) =>
     s >= 30 ? '💎' : s >= 14 ? '⚡' : s >= 7 ? '🔥' : s >= 3 ? '✨' : '🌱';
@@ -34,10 +39,65 @@ const XPPanel: React.FC<{ authUser: any }> = ({ authUser }) => {
     m >= 3 ? 'text-yellow-300' : m >= 2 ? 'text-orange-300' : m >= 1.5 ? 'text-green-300' : 'text-white';
 
   if (loading) return (
-    <div className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 text-white text-center">
-      Loading XP data...
+  <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    {/* XP Card */}
+    <div className="relative overflow-hidden bg-white/[0.06] backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-xl">
+
+      {/* shimmer */}
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+      <div className="space-y-5 relative z-10">
+        <div className="h-5 w-40 rounded-full bg-white/10"></div>
+
+        <div className="flex items-center gap-4">
+          <div className="h-16 w-16 rounded-2xl bg-white/10"></div>
+
+          <div className="flex-1 space-y-3">
+            <div className="h-4 w-36 rounded-full bg-white/10"></div>
+            <div className="h-3 w-24 rounded-full bg-white/5"></div>
+          </div>
+        </div>
+
+        <div className="h-3 rounded-full bg-white/10"></div>
+      </div>
     </div>
-  );
+
+    {/* Progress Card */}
+    <div className="relative overflow-hidden bg-white/[0.06] backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-xl">
+
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+      <div className="relative z-10 space-y-5">
+        <div className="h-5 w-44 rounded-full bg-white/10"></div>
+
+        <div className="h-32 rounded-2xl bg-white/10"></div>
+
+        <div className="space-y-3">
+          <div className="h-3 rounded-full bg-white/10"></div>
+          <div className="h-3 rounded-full w-4/5 bg-white/5"></div>
+        </div>
+      </div>
+    </div>
+
+    {/* Leaderboard */}
+    <div className="relative overflow-hidden bg-white/[0.06] backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-xl">
+
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+      <div className="relative z-10 space-y-4">
+        <div className="h-5 w-36 rounded-full bg-white/10 mb-4"></div>
+
+        {[1, 2, 3].map((item) => (
+          <div
+            key={item}
+            className="h-14 rounded-2xl bg-white/10"
+          />
+        ))}
+      </div>
+    </div>
+  </div>
+);
 
   return (
     <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -188,6 +248,15 @@ const Dashboard = () => {
   const { user: authUser } = useAuth();
 
   const [timeLeft, setTimeLeft] = useState('');
+  const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  const timer = setTimeout(() => {
+    setLoading(false);
+  }, 3000);
+
+  return () => clearTimeout(timer);
+}, []);
 
   useEffect(() => {
     if (!state.lastChallengeRefresh) return;

@@ -6,7 +6,7 @@ import { serviceWorkerPlugin } from './vite-plugins/serviceWorker';
 export default defineConfig({
   plugins: [react(), serviceWorkerPlugin()],
   optimizeDeps: {
-    exclude: ['lucide-react'],
+    // Removed exclude: ['lucide-react'] to prevent ad-blocker issues with fingerprint.js
   },
   test: {
     environment: 'jsdom',
