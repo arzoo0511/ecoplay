@@ -16,8 +16,8 @@ import {
   secondaryButton,
   softCard,
 } from '../lib/ui';
-import { useAuth } from '../context/AuthContext';
 import { dbFunctions, CommunityPost } from '../lib/supabase';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 const Community = () => {
   const [loading, setLoading] = useState(true);
@@ -29,24 +29,23 @@ React.useEffect(() => {
 
   return () => clearTimeout(timer);
 }, []);
-  const { isGuest } = useAuth();
+  const { user, isGuest } = useAuth();
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewPost, setShowNewPost] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState({
     title: '',
     content: '',
     category: 'question',
     tags: ''
   });
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [posts, setPosts] = useLocalStorage<CommunityPost[]>('ecoplay.community_posts', []);
   const [replyModal, setReplyModal] = useState<{ open: boolean; postId?: string }>({ open: false });
   const [replyText, setReplyText] = useState('');
   
-  // Track which posts the user has liked in this session
-  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  // Track which posts the user has liked in this session/device
+  const [likedPosts, setLikedPosts] = useLocalStorage<string[]>('ecoplay.community_liked_posts', []);
 
   const categories = [
     { id: 'all', name: 'All Posts' },
@@ -73,7 +72,7 @@ React.useEffect(() => {
   }, []);
 
   const handleLike = async (id: string) => {
-    const isLiked = likedPosts.has(id);
+    const isLiked = likedPosts.includes(id);
     const increment = !isLiked;
     
     // Optimistic UI
@@ -86,10 +85,8 @@ React.useEffect(() => {
     );
 
     setLikedPosts((prev) => {
-      const next = new Set(prev);
-      if (increment) next.add(id);
-      else next.delete(id);
-      return next;
+      if (increment) return [...prev, id];
+      return prev.filter((likedId) => likedId !== id);
     });
 
     const success = await dbFunctions.updateCommunityPostLikes(id, increment);
@@ -103,10 +100,8 @@ React.useEffect(() => {
         )
       );
       setLikedPosts((prev) => {
-        const next = new Set(prev);
-        if (increment) next.delete(id);
-        else next.add(id);
-        return next;
+        if (increment) return prev.filter((likedId) => likedId !== id);
+        return [...prev, id];
       });
       console.error('Failed to update like status');
     }
@@ -226,7 +221,7 @@ React.useEffect(() => {
     const date = new Date(dateString);
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   };
-  if (loading) {
+  if (loading && posts.length === 0) {
   return (
     <div className="space-y-6 animate-pulse">
 
@@ -444,7 +439,7 @@ React.useEffect(() => {
                     whileTap={{ scale: 0.9 }}
                     onClick={() => handleLike(post.id)}
                     className={`flex items-center space-x-2 rounded-lg px-3 py-2 transition-theme duration-300 ${
-                      likedPosts.has(post.id)
+                      likedPosts.includes(post.id)
                         ? 'bg-green-100 text-green-900 dark:text-emerald-300'
                         : 'border border-slate-200/80 bg-white/88 text-slate-800 hover:bg-white dark:border dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10'
                     }`}
