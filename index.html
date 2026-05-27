@@ -2,9 +2,29 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <!-- Web App Manifest for PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Favicon Configuration -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512x512.png" />
+    <link rel="shortcut icon" href="/icons/icon-192x192.png" />
+    
+    <!-- Viewport and Meta Tags -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#10b981" />
+    <meta name="description" content="A gamified platform for environmental study, community engagement, and eco-friendly challenges" />
+    
+    <!-- Apple-specific Meta Tags for iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="EcoPlay" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    
+    <!-- Page Title -->
     <title>EcoPlay: Interactive Environmental Platform</title>
+    
+    <!-- Theme Script -->
     <script>
       (() => {
         const storageKey = 'ecoplay-theme';

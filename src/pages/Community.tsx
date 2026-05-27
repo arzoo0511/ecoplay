@@ -16,19 +16,9 @@ import {
   secondaryButton,
   softCard,
 } from '../lib/ui';
-import { useAuth } from '../context/AuthContext';
 import { dbFunctions, CommunityPost } from '../lib/supabase';
 
 const Community = () => {
-  const [loading, setLoading] = useState(true);
-
-React.useEffect(() => {
-  const timer = setTimeout(() => {
-    setLoading(false);
-  }, 1500);
-
-  return () => clearTimeout(timer);
-}, []);
   const { isGuest } = useAuth();
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -70,6 +60,7 @@ React.useEffect(() => {
 
   useEffect(() => {
     fetchPosts();
+     
   }, []);
 
   const handleLike = async (id: string) => {

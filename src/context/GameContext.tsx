@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React from 'react';
 import { useAuth } from './AuthContext';
 import { loadState, saveState } from '../services/persistence';
@@ -573,7 +574,7 @@ export const GameProvider: React.FC<{
   );
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 export const useGame = () => {
   const ctx = React.useContext(GameContext);
 
