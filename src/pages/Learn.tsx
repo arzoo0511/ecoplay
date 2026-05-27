@@ -8,7 +8,7 @@ import {
   Star,
   X,
 } from 'lucide-react';
-import { useGame } from '../context/GameContext';
+import { useGameStore } from '../context/GameContext';
 import { learningContent, LearningContent } from '../data/learningContent';
 
 type ResourceType = 'all' | LearningContent['type'];
@@ -132,7 +132,7 @@ const ResourceCard: React.FC<{
 };
 
 const Learn = () => {
-  const { dispatch } = useGame();
+  const dispatch = useGameStore((state) => state.dispatch);
   const [selectedCategory, setSelectedCategory] = useState<CategoryKey>('all');
   const [selectedType, setSelectedType] = useState<ResourceType>('all');
   const [searchTerm, setSearchTerm] = useState('');

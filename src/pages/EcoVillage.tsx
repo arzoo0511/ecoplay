@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGame } from "../context/GameContext";
+import { useGameStore } from "../context/GameContext";
 import {
   TbBolt,
   TbWind,
@@ -65,9 +65,10 @@ const RESOURCE_TOOLTIPS = {
 } as const;
 
 const EcoVillage = () => {
-  const { state, dispatch } = useGame();
-
-  const { user, ecoVillage, notifications } = state;
+  const dispatch = useGameStore((state) => state.dispatch);
+  const user = useGameStore((state) => state.user);
+  const ecoVillage = useGameStore((state) => state.ecoVillage);
+  const notifications = useGameStore((state) => state.notifications);
 
   const [isLoading, setIsLoading] = useState(true);
 

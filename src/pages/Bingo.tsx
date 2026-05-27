@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGame } from '../context/GameContext';
+import { useGameStore } from '../context/GameContext';
 import { Award, X, CheckCircle, Trophy, Target, Zap } from 'lucide-react';
 import { dbFunctions } from '../lib/supabase';
 import { addPendingWrite } from '../lib/offline/offlineStore';
@@ -274,7 +274,7 @@ const Sparkles = () => (
 );
 
 const Bingo = () => {
-    const { dispatch } = useGame();
+    const dispatch = useGameStore((state) => state.dispatch);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
     const [completionState, setCompletionState] = useState<CompletionState>({});

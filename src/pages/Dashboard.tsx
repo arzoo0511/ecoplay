@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useGame } from '../context/GameContext';
+import { useGameStore } from '../context/GameContext';
 import {
   TbBolt,
   TbDroplet,
@@ -242,28 +242,23 @@ const Dashboard = () => {
   },
 ];
 
-  const { state, dispatch } = useGame();
-  const { user, ecoVillage, dailyChallenges, gameStats } = state;
+  const dispatch = useGameStore((state) => state.dispatch);
+  const user = useGameStore((state) => state.user);
+  const ecoVillage = useGameStore((state) => state.ecoVillage);
+  const dailyChallenges = useGameStore((state) => state.dailyChallenges);
+  const gameStats = useGameStore((state) => state.gameStats);
+  const lastChallengeRefresh = useGameStore((state) => state.lastChallengeRefresh);
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
 
   const [timeLeft, setTimeLeft] = useState('');
-  const [loading, setLoading] = useState(true);
-
-useEffect(() => {
-  const timer = setTimeout(() => {
-    setLoading(false);
-  }, 3000);
-
-  return () => clearTimeout(timer);
-}, []);
 
   useEffect(() => {
-    if (!state.lastChallengeRefresh) return;
+    if (!lastChallengeRefresh) return;
     
     const updateTimer = () => {
       const now = Date.now();
-      const nextRefresh = state.lastChallengeRefresh + 24 * 60 * 60 * 1000;
+      const nextRefresh = lastChallengeRefresh + 24 * 60 * 60 * 1000;
       const diff = nextRefresh - now;
       
       if (diff <= 0) {
@@ -282,7 +277,7 @@ useEffect(() => {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [state.lastChallengeRefresh]);
+  }, [lastChallengeRefresh]);
 
   const useCounter = (end: number, duration: number = 2000) => {
     const [count, setCount] = useState(0);

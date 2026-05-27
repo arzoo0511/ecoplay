@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGame } from '../context/GameContext';
+import { useGameStore } from '../context/GameContext';
 import { 
   TbPlayerPlay, 
   TbTrophy, 
@@ -45,7 +45,8 @@ useEffect(() => {
 
   return () => clearTimeout(timer);
 }, []);
-  const { state, dispatch } = useGame();
+  const dispatch = useGameStore((state) => state.dispatch);
+  const gameStats = useGameStore((state) => state.gameStats);
   const [gameActive, setGameActive] = useState(false);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30); // CHANGED: 30 seconds
@@ -238,15 +239,15 @@ useEffect(() => {
     dispatch({
       type: 'UPDATE_OCEAN_STATS',
       payload: {
-        totalTrashCollected: (state.gameStats?.totalTrashCollected || 0) + finalCollected,
-        perfectCleanups: state.gameStats?.perfectCleanups || 0
+        totalTrashCollected: (gameStats?.totalTrashCollected || 0) + finalCollected,
+        perfectCleanups: gameStats?.perfectCleanups || 0
       }
     });
 
     if (finalScore > 500) {
       setLevel(prev => prev + 1);
     }
-  }, [dispatch, state.gameStats]);
+  }, [dispatch, gameStats]);
 
   // Timer tick
   useEffect(() => {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { BookOpen, Home, Leaf, LogOut, TreePine, Users, Waves, Activity } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useGame } from '../context/GameContext';
+import { useGameStore } from '../context/GameContext';
 import ThemeToggle from './ThemeToggle';
 
 const navItems = [
@@ -23,7 +23,7 @@ const inactive =
 
 const NavBar = () => {
   const { user: authUser, logout } = useAuth();
-  const { state } = useGame();
+  const user = useGameStore((state) => state.user);
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -58,7 +58,7 @@ const NavBar = () => {
           </div>
           <div className="hidden rounded-2xl bg-white/10 px-3 py-2 text-right transition-theme duration-300 sm:flex sm:flex-col dark:border dark:border-white/10 dark:bg-white/5">
             <span className="text-xs text-blue-200 dark:text-slate-400">Points</span>
-            <span className="text-sm font-semibold text-green-400 dark:text-emerald-400">{state.user.points}</span>
+            <span className="text-sm font-semibold text-green-400 dark:text-emerald-400">{user.points}</span>
           </div>
           <button
             onClick={logout}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { create } from 'zustand';
 import { useAuth } from './AuthContext';
 import { loadState, saveState } from '../services/persistence';
 import { awardXP } from '../lib/gamification';
@@ -8,6 +9,7 @@ import { dbFunctions } from '../lib/supabase';
 
 // Define your GameState shape
 export interface GameState {
+  userId?: string;
   user: { points: number; name: string };
   ecoVillage: {
     airQuality: number;
@@ -104,12 +106,36 @@ const initialState: GameState = {
   }
 };
 
-type GameContextValue = {
-  state: GameState;
-  dispatch: React.Dispatch<any>;
+type GameStore = GameState & {
+  dispatch: (action: any) => void;
 };
 
-export const GameContext = React.createContext<GameContextValue | undefined>(undefined);
+export const useGameStore = create<GameStore>((set, get) => ({
+  ...initialState,
+  dispatch: async (action: any) => {
+    // Handle XP actions safely
+    if (action.type === 'ADD_POINTS') {
+      const state = get();
+      if (!state.userId) {
+        console.warn('[XP] No user ID — skipping XP award');
+        return;
+      }
+      const activity = action.activityType ?? 'daily_challenge';
+      try {
+        console.log('[XP] Awarding XP for', activity, 'user:', state.userId);
+        const result = await awardXP(state.userId, activity, action.metadata);
+        console.log('[XP] Award result:', result);
+        set((prev) => reducer(prev, action));
+      } catch (e) {
+        console.error('[XP] Award failed:', e);
+        return;
+      }
+      return;
+    }
+    // Normal actions
+    set((prev) => reducer(prev, action));
+  },
+}));
 
 // Simulation constants
 const RAIN_INTERVAL_MS = 15 * 60 * 1000;
@@ -383,9 +409,12 @@ export const GameProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
   const { user } = useAuth();
+  const dispatchBase = useGameStore((state) => state.dispatch);
+  const gameState = useGameStore();
 
-  const [state, dispatchBase] =
-    React.useReducer(reducer, initialState);
+  React.useEffect(() => {
+    useGameStore.setState({ userId: user?.id });
+  }, [user?.id]);
 
   React.useEffect(() => {
     if (!user) return;
@@ -417,9 +446,9 @@ export const GameProvider: React.FC<{
         }
       });
     }
-  }, [user]);
+  }, [user, dispatchBase]);
 
-  const lastRefresh = state.lastChallengeRefresh;
+  const lastRefresh = useGameStore((state) => state.lastChallengeRefresh);
   React.useEffect(() => {
     if (!user || !lastRefresh) return;
     const interval = setInterval(() => {
@@ -435,35 +464,34 @@ export const GameProvider: React.FC<{
       }
     }, 15000); // Check every 15 seconds
     return () => clearInterval(interval);
-  }, [user, lastRefresh]);
+  }, [user, lastRefresh, dispatchBase]);
 
   React.useEffect(() => {
     if (!user) return;
 
     const t = setTimeout(() => {
+      // Exclude functions when saving state
+      const { dispatch, ...stateToSave } = gameState;
       saveState({
         userId: user.id,
-        state
+        state: stateToSave as GameState
       });
     }, 300);
 
     return () => clearTimeout(t);
-  }, [state, user]);
+  }, [gameState, user]);
 
-  // Award login bonus XP once per session
   React.useEffect(() => {
     if (!user) return;
 
     const fetchCommunityData = async () => {
       try {
-        // Fetch events and current user participation
         const { events, participation } = await dbFunctions.getCommunityEvents(user.id);
         dispatchBase({
           type: 'SET_COMMUNITY_EVENTS',
           payload: { events, participation },
         });
 
-        // Fetch user history
         const history = await dbFunctions.getEventHistory(user.id);
         dispatchBase({
           type: 'SET_COMMUNITY_HISTORY',
@@ -475,113 +503,21 @@ export const GameProvider: React.FC<{
     };
 
     fetchCommunityData();
-    const interval = setInterval(fetchCommunityData, 30000); // sync every 30 seconds
+    const interval = setInterval(fetchCommunityData, 30000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, dispatchBase]);
 
-  // Award login bonus XP once per session
   React.useEffect(() => {
     if (!user?.id) return;
 
     awardXP(user.id, 'login_bonus')
       .then((result) => {
-        console.log(
-          '[XP] Login bonus awarded:',
-          result
-        );
+        console.log('[XP] Login bonus awarded:', result);
       })
       .catch((e) => {
-        console.error(
-          '[XP] Login bonus failed:',
-          e
-        );
+        console.error('[XP] Login bonus failed:', e);
       });
   }, [user?.id]);
 
-  // Improved dispatch with safe XP synchronization
-  const dispatch = React.useCallback(
-    async (action: any) => {
-
-      // Handle XP actions safely
-      if (action.type === 'ADD_POINTS') {
-
-        if (!user?.id) {
-          console.warn(
-            '[XP] No user ID — skipping XP award'
-          );
-          return;
-        }
-
-        const activity =
-          action.activityType ??
-          'daily_challenge';
-
-        try {
-
-          console.log(
-            '[XP] Awarding XP for',
-            activity,
-            'user:',
-            user.id
-          );
-
-          // Wait for backend confirmation FIRST
-          const result = await awardXP(
-            user.id,
-            activity,
-            action.metadata
-          );
-
-          console.log(
-            '[XP] Award result:',
-            result
-          );
-
-          // Only update local state after success
-          dispatchBase(action);
-
-        } catch (e) {
-
-          console.error(
-            '[XP] Award failed:',
-            e
-          );
-
-          // Prevent inconsistent UI state
-          return;
-        }
-
-        return;
-      }
-
-      // Normal actions
-      dispatchBase(action);
-
-    },
-    [user?.id]
-  );
-
-  return (
-    <GameContext.Provider
-      value={{
-        state,
-        dispatch
-      }}
-    >
-      {children}
-    </GameContext.Provider>
-  );
-};
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const useGame = () => {
-  const ctx = React.useContext(GameContext);
-
-  if (!ctx) {
-    throw new Error(
-      'useGame must be used within GameProvider'
-    );
-  }
-
-  return ctx;
+  return <>{children}</>;
 };

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../context/GameContext';
+import { useGameStore } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
 import { useGamification } from '../hooks/useGamification';
 import {
@@ -26,7 +26,9 @@ import { addPendingWrite } from '../lib/offline/offlineStore';
 import { safeSupabase } from '../lib/supabaseClient';
 
 export const RecommendedChallenges: React.FC = () => {
-  const { state, dispatch } = useGame();
+  const dispatch = useGameStore((state) => state.dispatch);
+  const recommendedChallenges = useGameStore((state) => state.recommendedChallenges);
+  const categoryPreferences = useGameStore((state) => state.categoryPreferences);
   const { user: authUser } = useAuth();
   const navigate = useNavigate();
 
@@ -57,17 +59,18 @@ export const RecommendedChallenges: React.FC = () => {
   // Generate recommendations if none exist yet
   useEffect(() => {
     if (
-      state.recommendedChallenges && 
-      state.recommendedChallenges.length === 0 && 
+      recommendedChallenges && 
+      recommendedChallenges.length === 0 && 
       !gamificationLoading
     ) {
       handleRefresh();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.recommendedChallenges?.length, gamificationLoading, level, currentStreak]);
+  }, [recommendedChallenges?.length, gamificationLoading, level, currentStreak]);
   const handleRefresh = useCallback(() => {
     setSyncing(true);
     try {
+      const state = useGameStore.getState();
       const recommendations = generateRecommendations(
         state,
         level,
@@ -87,18 +90,18 @@ export const RecommendedChallenges: React.FC = () => {
     } finally {
       setSyncing(false);
     }
-  }, [state, level, currentStreak, dispatch]);
+  }, [level, currentStreak, dispatch]);
 
   // Generate recommendations if none exist yet
   useEffect(() => {
     if (
-      state.recommendedChallenges &&
-      state.recommendedChallenges.length === 0 &&
+      recommendedChallenges &&
+      recommendedChallenges.length === 0 &&
       !gamificationLoading
     ) {
       handleRefresh();
     }
-  }, [state.recommendedChallenges, gamificationLoading, handleRefresh]);
+  }, [recommendedChallenges, gamificationLoading, handleRefresh]);
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -156,7 +159,7 @@ export const RecommendedChallenges: React.FC = () => {
   const startChallenge = (title: string) => navigate(routeFor(title));
 
   const addProgress = async (id: string, delta = 25) => {
-    const challenge = state.recommendedChallenges?.find(c => c.id === id);
+    const challenge = recommendedChallenges?.find(c => c.id === id);
     if (!challenge || challenge.completed) return;
 
     const nextProgress = Math.min(100, (challenge.progress ?? 0) + delta);
@@ -197,7 +200,7 @@ export const RecommendedChallenges: React.FC = () => {
       });
 
       // Update interest category preferences
-      const updatedPrefs = updatePreference(state.categoryPreferences, challenge.category);
+      const updatedPrefs = updatePreference(categoryPreferences, challenge.category);
       dispatch?.({
         type: 'UPDATE_PREFERENCES',
         payload: updatedPrefs
@@ -259,7 +262,7 @@ export const RecommendedChallenges: React.FC = () => {
     }
   };
 
-  const activeRecommendations = state.recommendedChallenges || [];
+  const activeRecommendations = recommendedChallenges || [];
 
   return (
     <motion.div
