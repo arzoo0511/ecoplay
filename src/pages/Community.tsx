@@ -150,8 +150,12 @@ const Community = () => {
 
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isGuest) {
+      alert('Guests cannot post. Please sign in first.');
+      return;
+    }
     if (!user) {
-      alert("Please login to post");
+      alert('Please log in to post');
       return;
     }
 
