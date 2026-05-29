@@ -16,10 +16,10 @@ import {
   secondaryButton,
   softCard,
 } from '../lib/ui';
-import { useAuth } from '../context/AuthContext';
 import { dbFunctions, CommunityPost } from '../lib/supabase';
 
 const Community = () => {
+
   
  
 
@@ -30,6 +30,8 @@ React.useEffect(() => {
 
   return () => clearTimeout(timer);
 }, []);
+
+
   const { isGuest } = useAuth();
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('all');

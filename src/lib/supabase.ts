@@ -1,8 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+const isPlaceholderValue = (value: string | undefined) =>
+  !value || value.includes('your-project') || value.includes('your-anon-key');
+
+export const supabaseConfigError = isPlaceholderValue(supabaseUrl)
+  ? 'Missing VITE_SUPABASE_URL. Add your Supabase project URL to .env.'
+  : isPlaceholderValue(supabaseAnonKey)
+  ? 'Missing VITE_SUPABASE_ANON_KEY. Add your Supabase anon key to .env.'
+  : null;
+
+export const isSupabaseConfigured = !supabaseConfigError;
+
 export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-anon-key'
 );
 
 
