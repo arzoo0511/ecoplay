@@ -20,7 +20,8 @@ import { useAuth } from '../context/AuthContext';
 import { dbFunctions, CommunityPost } from '../lib/supabase';
 
 const Community = () => {
-  const [loading, setLoading] = useState(true);
+  
+ 
 
 React.useEffect(() => {
   const timer = setTimeout(() => {
@@ -629,7 +630,7 @@ React.useEffect(() => {
         className="mt-8 rounded-2xl border border-green-300/30 bg-gradient-to-r from-green-500/20 to-blue-500/20 p-6 backdrop-blur-lg transition-theme duration-300 dark:border-emerald-500/20 dark:from-emerald-500/10 dark:to-teal-500/10"
       >
         <h2 className="mb-4 text-2xl font-bold text-sky-950 dark:text-white">Community Guidelines</h2>
-        <div className="grid gap-4 text-sky-950/85 dark:text-slate-300 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 text-sky-950/85 dark:text-slate-300 sm:grid-cols-2 md:grid-cols-3">
           <div>
             <h3 className="mb-2 font-bold text-green-900 dark:text-white">Be Respectful</h3>
             <p className="text-sm">Treat all community members with kindness and respect.</p>

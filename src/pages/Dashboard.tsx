@@ -39,7 +39,7 @@ const loading =
     m >= 3 ? 'text-yellow-300' : m >= 2 ? 'text-orange-300' : m >= 1.5 ? 'text-green-300' : 'text-white';
 
   if (loading) return (
-  <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+ <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
     {/* XP Card */}
     <div className="relative overflow-hidden bg-white/[0.06] backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-xl">
@@ -100,7 +100,7 @@ const loading =
 );
 
   return (
-    <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+   <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
       {/* XP + Level */}
       <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
@@ -511,7 +511,7 @@ useEffect(() => {
               </div>
             ))}
           </div>
-          <div className="mt-6 grid grid-cols-3 gap-4 text-center">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-center">
             <div className="text-white bg-white/5 rounded-xl p-3">
               <TbTree className="h-8 w-8 text-green-400 mx-auto mb-2" />
               <p className="font-bold text-xl">{ecoVillage.trees}</p>
