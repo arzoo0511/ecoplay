@@ -32,7 +32,7 @@ export const chipBase =
 export const modalBackdrop = 'fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm';
 
 export const modalPanel =
-  'w-full rounded-2xl border border-white/35 bg-white/78 shadow-2xl shadow-slate-950/18 backdrop-blur-xl transition-theme duration-300 dark:border-white/10 dark:bg-gray-800/95 dark:shadow-black/40';
+'w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-white/35 bg-white/78 shadow-2xl shadow-slate-950/18 backdrop-blur-xl transition-theme duration-300 dark:border-white/10 dark:bg-gray-800/95 dark:shadow-black/40';
 
 export const sectionTitle = 'text-2xl font-bold text-slate-950 dark:text-white';
 
