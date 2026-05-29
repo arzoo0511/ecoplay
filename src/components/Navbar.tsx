@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { BookOpen, Home, Leaf, LogOut, TreePine, Users, Waves } from 'lucide-react';
+import { BookOpen, Home, Leaf, LogOut, TreePine, Users, Waves, Activity } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useGame } from '../context/GameContext';
 import ThemeToggle from './ThemeToggle';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: Home },
+  { path: '/journey', label: 'Journey', icon: Activity },
   { path: '/ocean-cleanup-game', label: 'Ocean Game', icon: Waves },
   { path: '/eco-village', label: 'Eco Village', icon: TreePine },
   { path: '/learn', label: 'Learn', icon: BookOpen },

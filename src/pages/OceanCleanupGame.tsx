@@ -36,6 +36,15 @@ const TRASH_TYPES = {
 } as const;
 
 const OceanCleanupGame = () => {
+  const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  const timer = setTimeout(() => {
+    setLoading(false);
+  }, 1500);
+
+  return () => clearTimeout(timer);
+}, []);
   const { state, dispatch } = useGame();
   const [gameActive, setGameActive] = useState(false);
   const [score, setScore] = useState(0);
@@ -275,6 +284,53 @@ const OceanCleanupGame = () => {
   const formatTime = (seconds: number) => {
     return `0:${seconds.toString().padStart(2, '0')}`;
   };
+
+  if (loading) {
+  return (
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 animate-pulse">
+      {/* Title Skeleton */}
+      <div className="mb-6 text-center">
+        <div className="h-12 w-80 bg-white/10 rounded-xl mx-auto mb-4" />
+        <div className="h-6 w-96 bg-white/10 rounded-lg mx-auto" />
+      </div>
+
+      {/* Stats Cards Skeleton */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        {[...Array(5)].map((_, i) => (
+          <div
+            key={i}
+            className="bg-white/10 rounded-xl p-4 border border-white/10"
+          >
+            <div className="h-10 w-10 bg-white/10 rounded-lg mb-3" />
+            <div className="h-8 w-20 bg-white/10 rounded mb-2" />
+            <div className="h-4 w-16 bg-white/10 rounded" />
+          </div>
+        ))}
+      </div>
+
+      {/* Game Area Skeleton */}
+      <div className="bg-white/10 rounded-2xl h-[600px] mb-6" />
+
+      {/* How to Play Skeleton */}
+      <div className="bg-white/10 rounded-xl p-6">
+        <div className="h-8 w-48 bg-white/10 rounded mb-4" />
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <div className="h-4 bg-white/10 rounded" />
+            <div className="h-4 bg-white/10 rounded" />
+            <div className="h-4 bg-white/10 rounded" />
+          </div>
+
+          <div className="space-y-3">
+            <div className="h-4 bg-white/10 rounded" />
+            <div className="h-4 bg-white/10 rounded" />
+            <div className="h-4 bg-white/10 rounded" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
   return (
     <motion.div

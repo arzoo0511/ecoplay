@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
@@ -136,6 +136,15 @@ const Learn = () => {
   const [selectedCategory, setSelectedCategory] = useState<CategoryKey>('all');
   const [selectedType, setSelectedType] = useState<ResourceType>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  const timer = setTimeout(() => {
+    setLoading(false);
+  }, 1500);
+
+  return () => clearTimeout(timer);
+}, []);
 
   const filteredContent = learningContent.filter((content) => {
     const matchesCategory = selectedCategory === 'all' || content.category === selectedCategory;
@@ -167,7 +176,90 @@ const Learn = () => {
   };
 
   void dispatch;
+if (loading) {
+  return (
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 space-y-8 animate-pulse">
 
+      {/* Hero Section */}
+      <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8">
+        <div className="h-10 w-72 rounded-full bg-white/10 mb-4"></div>
+        <div className="h-4 w-96 rounded-full bg-white/10 mb-6"></div>
+
+        <div className="flex flex-wrap gap-3">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="h-10 w-36 rounded-full bg-white/10"
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Search + Filters */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+        <div className="h-12 rounded-xl bg-white/10 mb-4"></div>
+
+        <div className="space-y-4">
+          <div className="flex gap-2 overflow-hidden">
+            {[1,2,3,4,5].map((item) => (
+              <div
+                key={item}
+                className="h-10 w-28 rounded-full bg-white/10"
+              />
+            ))}
+          </div>
+
+          <div className="flex gap-2 overflow-hidden">
+            {[1,2,3].map((item) => (
+              <div
+                key={item}
+                className="h-10 w-24 rounded-full bg-white/10"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Resource Cards */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {[1,2,3,4,5,6].map((card) => (
+          <div
+            key={card}
+            className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06]"
+          >
+            {/* shimmer */}
+            <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+            <div className="relative z-10">
+              <div className="h-44 bg-white/10"></div>
+
+              <div className="p-4 space-y-3">
+                <div className="flex justify-between">
+                  <div className="h-4 w-28 rounded-full bg-white/10"></div>
+                  <div className="h-5 w-20 rounded-full bg-white/10"></div>
+                </div>
+
+                <div className="h-5 w-4/5 rounded-full bg-white/10"></div>
+
+                <div className="space-y-2">
+                  <div className="h-3 rounded-full bg-white/10"></div>
+                  <div className="h-3 w-5/6 rounded-full bg-white/10"></div>
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="h-4 w-20 rounded-full bg-white/10"></div>
+                  <div className="h-4 w-16 rounded-full bg-white/10"></div>
+                </div>
+
+                <div className="h-10 rounded-xl bg-white/10"></div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="mb-8 overflow-hidden rounded-3xl border border-eco-border bg-eco-surface bg-gradient-to-br from-eco-accent/10 to-transparent px-6 py-8 sm:px-8 lg:px-10">

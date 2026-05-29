@@ -120,6 +120,12 @@ CREATE POLICY "Users can manage own challenges" ON challenges FOR ALL USING (aut
 CREATE POLICY "Users can manage own posts" ON community_posts FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Anyone can view events" ON events FOR SELECT USING (true);
 
+-- Added columns for Community Post enhancement
+ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS author_name TEXT;
+ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS tags TEXT[];
+ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS replies INTEGER DEFAULT 0;
+ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS is_solved BOOLEAN DEFAULT false;
 -- ============================================================
 -- Recommendation Engine Extensions
 -- ============================================================

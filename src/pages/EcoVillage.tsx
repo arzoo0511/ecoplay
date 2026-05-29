@@ -370,11 +370,76 @@ const EcoVillage = () => {
         onDragOver={handleDragOver}
       >
         {isLoading ? (
-          <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center text-white font-bold gap-2">
-            <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-            Loading village layout...
-          </div>
-        ) : (
+  <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-sky-400 via-sky-300 to-emerald-600 overflow-hidden">
+
+    {/* Background clouds */}
+    <div className="absolute top-10 left-10 text-6xl opacity-40 animate-pulse">
+      ☁️
+    </div>
+    <div className="absolute top-20 right-16 text-5xl opacity-40 animate-pulse">
+      ☁️
+    </div>
+
+    {/* Worker animation */}
+    <motion.div
+      animate={{
+        y: [0, -10, 0],
+      }}
+      transition={{
+        duration: 1.5,
+        repeat: Infinity,
+      }}
+      className="text-8xl mb-4"
+    >
+      👨‍🌾
+    </motion.div>
+
+    {/* Trees growing */}
+    <motion.div
+      className="flex gap-4 text-5xl mb-6"
+      animate={{
+        scale: [1, 1.15, 1],
+      }}
+      transition={{
+        duration: 1,
+        repeat: Infinity,
+      }}
+    >
+      🌱 🌿 🌳
+    </motion.div>
+
+    {/* Loading text */}
+    <motion.h2
+      animate={{
+        opacity: [0.5, 1, 0.5],
+      }}
+      transition={{
+        duration: 1.5,
+        repeat: Infinity,
+      }}
+      className="text-2xl font-black text-white drop-shadow-lg"
+    >
+      Building Your Eco Village...
+    </motion.h2>
+
+    <p className="text-white/90 font-medium mt-2">
+      Planting trees & preparing sustainability 🌍
+    </p>
+
+    {/* Progress bar */}
+    <div className="mt-6 w-72 h-3 bg-white/20 rounded-full overflow-hidden">
+      <motion.div
+        className="h-full bg-green-400 rounded-full"
+        initial={{ width: "0%" }}
+        animate={{ width: "100%" }}
+        transition={{
+          duration: 1.5,
+          repeat: Infinity,
+        }}
+      />
+    </div>
+  </div>
+) : (
           <>
             <div
               className="absolute inset-0 z-0 pointer-events-none"
@@ -527,7 +592,69 @@ const EcoVillage = () => {
                     isLocked = true;
                   }
                 }
+                if (isLoading) {
+  return (
+    <div className="p-4 md:p-8 max-w-7xl mx-auto animate-pulse">
 
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row justify-between gap-6 mb-8">
+        <div>
+          <div className="h-12 w-72 rounded-xl bg-white/10 mb-3" />
+          <div className="h-5 w-96 rounded-lg bg-white/10" />
+        </div>
+
+        {/* Stats cards */}
+        <div className="flex gap-3 flex-wrap">
+          {[1,2,3,4,5].map((item) => (
+            <div
+              key={item}
+              className="w-24 h-24 rounded-2xl bg-white/10 border border-white/10"
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Village board */}
+      <div className="mb-8 h-[460px] rounded-3xl bg-white/10 border border-white/10 relative overflow-hidden">
+        <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      </div>
+
+      {/* Inventory */}
+      <div className="mb-8">
+        <div className="h-8 w-52 rounded-lg bg-white/10 mb-4" />
+        <div className="rounded-2xl p-5 border border-white/10 bg-white/5 flex gap-4">
+          {[1,2,3,4].map((item) => (
+            <div
+              key={item}
+              className="w-20 h-20 rounded-xl bg-white/10"
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Shop Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="h-8 w-48 rounded-lg bg-white/10" />
+
+        <div className="flex gap-2">
+          {[1,2,3,4].map((item) => (
+            <div
+              key={item}
+              className="h-10 w-24 rounded-xl bg-white/10"
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Shop cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {Array.from({ length: 8 }).map((_, idx) => (
+          <ProjectCardSkeleton key={idx} />
+        ))}
+      </div>
+    </div>
+  );
+}
                 return (
                   <Tooltip key={item.id} content={item.description} disableTouchToggle>
                     <motion.div
