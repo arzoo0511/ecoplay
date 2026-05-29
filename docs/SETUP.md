@@ -71,6 +71,19 @@ VITE_SUPABASE_URL=https://abcdefghijklmnop.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
+### Vercel environment variables
+
+If you deploy EcoPlay on Vercel, add the same two values in the Vercel dashboard:
+
+1. Open your Vercel project.
+2. Go to **Settings -> Environment Variables**.
+3. Add `VITE_SUPABASE_URL` with your Supabase **Project URL**.
+4. Add `VITE_SUPABASE_ANON_KEY` with your Supabase **anon public** key.
+5. Select **Production**, **Preview**, and **Development** unless you intentionally need different projects per environment.
+6. Redeploy after saving the variables.
+
+Vercel does not read your local `.env` file, so these values must be added in the Vercel dashboard for preview and production deployments.
+
 ---
 
 ## 5. Set Up the Database

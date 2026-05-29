@@ -248,15 +248,6 @@ const Dashboard = () => {
   const { user: authUser } = useAuth();
 
   const [timeLeft, setTimeLeft] = useState('');
-  const [loading, setLoading] = useState(true);
-
-useEffect(() => {
-  const timer = setTimeout(() => {
-    setLoading(false);
-  }, 3000);
-
-  return () => clearTimeout(timer);
-}, []);
 
   useEffect(() => {
     if (!state.lastChallengeRefresh) return;

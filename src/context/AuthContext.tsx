@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import {
+  isSupabaseConfigured,
+  supabase,
+  supabaseConfigError,
+} from "../lib/supabase";
 import type { AuthContextType, AuthResponse, User } from "../types/auth";
 import { clearState, loadState, saveState } from "../services/persistence";
 import {
@@ -10,6 +14,7 @@ import {
   hasGuestState,
   isGuestMode,
 } from "../lib/guest";
+import { getAuthErrorMessage } from "../lib/authErrors";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -32,6 +37,10 @@ function toAppUser(supabaseUser: any): User {
   };
 }
 
+const authSetupMessage =
+  supabaseConfigError ||
+  "Authentication is not configured. Add your Supabase credentials to .env.";
+
 export const AuthProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
@@ -44,16 +53,30 @@ export const AuthProvider: React.FC<{
   const [showMergePrompt, setShowMergePrompt] = useState(false);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setUser(isGuestMode() ? guestUser : null);
+      setSupabaseError(authSetupMessage);
+      setLoading(false);
+      return;
+    }
+
     supabase.auth
       .getSession()
       .then(({ data: { session } }) => {
-        setUser(session?.user ? toAppUser(session.user) : isGuestMode() ? guestUser : null);
+        setUser(
+          session?.user ? toAppUser(session.user) : isGuestMode() ? guestUser : null
+        );
         setLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("[Auth] Session restore failed:", error);
         setSupabaseError(
-          "Unable to connect to Supabase. Some features may be unavailable."
+          getAuthErrorMessage(
+            error,
+            "Unable to connect to Supabase. Some features may be unavailable."
+          )
         );
+        setUser(isGuestMode() ? guestUser : null);
         setLoading(false);
       });
 
@@ -78,6 +101,13 @@ export const AuthProvider: React.FC<{
     email: string,
     password: string
   ): Promise<AuthResponse> => {
+    if (!isSupabaseConfigured) {
+      return {
+        success: false,
+        error: authSetupMessage,
+      };
+    }
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
@@ -88,7 +118,10 @@ export const AuthProvider: React.FC<{
       });
 
       if (error) {
-        return { success: false, error: error.message };
+        return {
+          success: false,
+          error: getAuthErrorMessage(error, "Registration failed."),
+        };
       }
 
       if (!data.user) {
@@ -135,7 +168,14 @@ export const AuthProvider: React.FC<{
       return { success: true, user: toAppUser(data.user) };
     } catch (err: any) {
       console.error("[Auth] Register error:", err);
-      return { success: false, error: "An unexpected error occurred." };
+
+      return {
+        success: false,
+        error: getAuthErrorMessage(
+          err,
+          "An unexpected registration error occurred."
+        ),
+      };
     }
   };
 
@@ -143,6 +183,13 @@ export const AuthProvider: React.FC<{
     email: string,
     password: string
   ): Promise<AuthResponse> => {
+    if (!isSupabaseConfigured) {
+      return {
+        success: false,
+        error: authSetupMessage,
+      };
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
@@ -150,7 +197,10 @@ export const AuthProvider: React.FC<{
       });
 
       if (error) {
-        return { success: false, error: error.message };
+        return {
+          success: false,
+          error: getAuthErrorMessage(error, "Login failed."),
+        };
       }
 
       if (!data.user) {
@@ -170,7 +220,47 @@ export const AuthProvider: React.FC<{
       return { success: true, user: loggedInUser };
     } catch (err: any) {
       console.error("[Auth] Login error:", err);
-      return { success: false, error: "An unexpected error occurred." };
+
+      return {
+        success: false,
+        error: getAuthErrorMessage(err, "An unexpected login error occurred."),
+      };
+    }
+  };
+
+  const forgotPassword = async (email: string) => {
+    if (!isSupabaseConfigured) {
+      return {
+        success: false,
+        error: authSetupMessage,
+      };
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email.trim().toLowerCase(),
+        {
+          redirectTo: window.location.origin,
+        }
+      );
+
+      if (error) {
+        return {
+          success: false,
+          error: getAuthErrorMessage(error, "Failed to send reset email."),
+        };
+      }
+
+      return {
+        success: true,
+      };
+    } catch (err: any) {
+      console.error("[Auth] Forgot password error:", err);
+
+      return {
+        success: false,
+        error: getAuthErrorMessage(err, "Failed to send reset email."),
+      };
     }
   };
 
@@ -234,7 +324,11 @@ export const AuthProvider: React.FC<{
     if (user) {
       clearState(user.id);
     }
-    await supabase.auth.signOut();
+
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut();
+    }
+
     setUser(null);
   };
 
@@ -248,6 +342,7 @@ export const AuthProvider: React.FC<{
         showMergePrompt,
         login,
         register,
+        forgotPassword,
         enterGuest,
         exitGuest,
         confirmMerge,
