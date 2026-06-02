@@ -211,6 +211,7 @@ const Dashboard = () => {
     icon: "🌱",
     required: 0,
     color: "from-green-400 to-emerald-500",
+    description: "Start your sustainability journey and earn your first eco points."
   },
   {
     id: 2,
@@ -218,6 +219,7 @@ const Dashboard = () => {
     icon: "🌊",
     required: 100,
     color: "from-blue-400 to-cyan-500",
+    description: "Collect trash and help keep oceans clean by reaching 100 points."
   },
   {
     id: 3,
@@ -225,6 +227,7 @@ const Dashboard = () => {
     icon: "🌳",
     required: 250,
     color: "from-lime-400 to-green-500",
+    description: "Show your dedication to nature by reaching 250 eco points."
   },
   {
     id: 4,
@@ -232,6 +235,7 @@ const Dashboard = () => {
     icon: "♻️",
     required: 500,
     color: "from-yellow-400 to-orange-500",
+    description: "Promote responsible waste management and achieve 500 points."
   },
   {
     id: 5,
@@ -239,6 +243,7 @@ const Dashboard = () => {
     icon: "🏆",
     required: 1000,
     color: "from-purple-400 to-pink-500",
+    description: "Become a true environmental leader by earning 1000 eco points."
   },
 ];
 
@@ -644,7 +649,8 @@ const Dashboard = () => {
 
       return (
         <motion.div
-          whileHover={{ scale: 1.05 }}
+          title={`${badge.name} - ${badge.description}`}
+whileHover={{ scale: 1.05, y: -5 }}
           key={badge.id}
           className={`rounded-2xl p-5 text-center transition-all duration-300 ${
             unlocked
@@ -656,9 +662,19 @@ const Dashboard = () => {
             {badge.icon}
           </div>
 
-          <h3 className="font-bold text-lg mb-2">
-            {badge.name}
-          </h3>
+         <h3 className="font-bold text-lg mb-2">
+  {badge.name}
+</h3>
+
+<p className="text-sm opacity-90 mb-2">
+  {unlocked
+    ? "Unlocked 🎉"
+    : `${badge.required} points needed`}
+</p>
+
+<div className="text-xs opacity-80">
+  {badge.description}
+</div>
 
           <p className="text-sm opacity-90">
             {unlocked
