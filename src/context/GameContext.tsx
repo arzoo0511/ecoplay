@@ -70,6 +70,78 @@ function generateDailyChallenges(seedTime: number = Date.now()): GameState['dail
   }));
 }
 
+interface GameActionBase {
+  payload?: unknown;
+  activityType?: string;
+  metadata?: Record<string, unknown>;
+}
+
+interface AddPointsAction extends GameActionBase {
+  type: 'ADD_POINTS';
+  payload: number;
+}
+
+interface CompleteDailyChallengeAction extends GameActionBase {
+  type: 'COMPLETE_DAILY_CHALLENGE';
+  payload: { points: number; challengeId: string };
+}
+
+interface SetStreakStateAction extends GameActionBase {
+  type: 'SET_STREAK_STATE';
+  payload: StreakState;
+}
+
+interface UpdateChallengeAction extends GameActionBase {
+  type: 'UPDATE_CHALLENGE';
+  payload: { id: string; data: Partial<GameState['dailyChallenges'][number]> };
+}
+
+interface UpdateEcoVillageAction extends GameActionBase {
+  type: 'UPDATE_ECO_VILLAGE';
+  payload: Partial<GameState['ecoVillage']>;
+}
+
+interface UpdateOceanStatsAction extends GameActionBase {
+  type: 'UPDATE_OCEAN_STATS';
+  payload: Partial<GameState['gameStats']>;
+}
+
+interface HydrateAction extends GameActionBase {
+  type: 'HYDRATE';
+  payload: Partial<GameState>;
+}
+
+interface AddNotificationAction extends GameActionBase {
+  type: 'ADD_NOTIFICATION';
+  payload: string;
+}
+
+interface ClearNotificationsAction {
+  type: 'CLEAR_NOTIFICATIONS';
+}
+
+interface SimulateTimeAction {
+  type: 'SIMULATE_TIME';
+}
+
+interface DefaultAction {
+  type: string;
+  payload?: unknown;
+}
+
+type GameAction =
+  | AddPointsAction
+  | CompleteDailyChallengeAction
+  | SetStreakStateAction
+  | UpdateChallengeAction
+  | UpdateEcoVillageAction
+  | UpdateOceanStatsAction
+  | HydrateAction
+  | AddNotificationAction
+  | ClearNotificationsAction
+  | SimulateTimeAction
+  | DefaultAction;
+
 const initialState: GameState = {
   user: { points: 0, name: 'Player' },
   ecoVillage: {
@@ -266,6 +338,8 @@ function reducer(
         dailyChallenges: action.payload.challenges,
         lastChallengeRefresh: action.payload.lastChallengeRefresh
       };
+
+
     case 'UPDATE_RECOMMENDED_CHALLENGE':
       return {
         ...state,

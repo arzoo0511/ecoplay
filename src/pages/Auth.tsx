@@ -280,7 +280,7 @@ const Auth = () => {
           <motion.div
             whileHover={{ rotate: 360 }}
             transition={{ duration: 0.8 }}
-            className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-lg"
+            className="bg-green-500 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center"
           >
             <Leaf className="h-8 w-8 text-white" />
           </motion.div>

@@ -157,7 +157,10 @@ const loading =
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-yellow-300 w-6">#{entry.rank}</span>
+                  <span className="text-sm font-bold text-yellow-300 w-6">
+                    #{entry.rank}
+                  </span>
+
                   {entry.avatarUrl ? (
                     <img
                       src={entry.avatarUrl}
@@ -169,8 +172,11 @@ const loading =
                       {entry.username.slice(0, 2).toUpperCase()}
                     </div>
                   )}
-                  <span className="text-sm text-white truncate max-w-[80px]">{entry.username}</span>
-                </div>
+
+                  <span className="text-sm text-white truncate max-w-[80px]">
+                    {entry.username}
+                  </span>
+		</div>
                 <div className="text-right">
                   <p className="text-xs font-bold text-green-400">{entry.totalXP.toLocaleString()} XP</p>
                   <p className="text-xs text-white/40">Lv.{entry.currentLevel}</p>
@@ -254,6 +260,15 @@ const Dashboard = () => {
 
   const [timeLeft, setTimeLeft] = useState('');
 
+  const currentStreak = streakState?.streak_count ?? 0;
+  const availableFreezes =
+    streakState?.streak_freeze_count ?? 0;
+
+  const freezeRing = `${Math.max(
+    0,
+    Math.min(100, availableFreezes * 100)
+  )}%`;
+
   useEffect(() => {
     if (!state.lastChallengeRefresh) return;
     
@@ -280,7 +295,22 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [state.lastChallengeRefresh]);
 
-  const useCounter = (end: number, duration: number = 2000) => {
+  React.useEffect(() => {
+    if (!notifications.length) return;
+
+    const timer = window.setTimeout(() => {
+      dispatch({ type: 'CLEAR_NOTIFICATIONS' });
+    }, 3600);
+
+    return () => window.clearTimeout(timer);
+  }, [dispatch, notifications.length]);
+
+
+
+  const useCounter = (
+    end: number,
+    duration: number = 2000
+  ) => {
     const [count, setCount] = useState(0);
     useEffect(() => {
       let startTime: number;
@@ -301,10 +331,30 @@ const Dashboard = () => {
   const animatedPoints = useCounter(totalPoints);
 
   const calculateEcoScore = () => {
-    const villageScore = (ecoVillage.airQuality + ecoVillage.waterQuality + ecoVillage.biodiversity) / 3;
-    const activityScore = Math.min(100, (gameStats.totalTrashCollected / 10) + (ecoVillage.trees / 2));
-    const completionScore = dailyChallenges.length ? (dailyChallenges.filter(c => c.completed).length / dailyChallenges.length) * 100 : 0;
-    return Math.round((villageScore * 0.4) + (activityScore * 0.3) + (completionScore * 0.3));
+    const villageScore =
+      (ecoVillage.airQuality +
+        ecoVillage.waterQuality +
+        ecoVillage.biodiversity) /
+      3;
+
+    const activityScore = Math.min(
+      100,
+      gameStats.totalTrashCollected / 10 +
+        ecoVillage.trees / 2
+    );
+
+    const completionScore = dailyChallenges.length
+      ? (dailyChallenges.filter((c) => c.completed)
+          .length /
+          dailyChallenges.length) *
+        100
+      : 0;
+
+    return Math.round(
+      villageScore * 0.4 +
+        activityScore * 0.3 +
+        completionScore * 0.3
+    );
   };
 
   const ecoScore = calculateEcoScore();
@@ -314,14 +364,36 @@ const Dashboard = () => {
   const ecoScoreChange = Math.floor((ecoScore - 65) / 5);
 
   const routeFor = (text: string) => {
-    const t = text.toLowerCase();
-    if (t.includes('cleanup') || t.includes('ocean')) return '/ocean-cleanup-game';
-    if (t.includes('water') || t.includes('tree') || t.includes('eco')) return '/eco-village';
-    if (t.includes('learn') || t.includes('course') || t.includes('video')) return '/learn';
-    if (t.includes('event')) return '/events';
-    if (t.includes('community')) return '/community';
+  const t = text.toLowerCase();
+
+  if (
+    t.includes('cleanup') ||
+    t.includes('ocean')
+  )
+    return '/ocean-cleanup-game';
+
+  if (
+    t.includes('water') ||
+    t.includes('tree') ||
+    t.includes('eco')
+  )
     return '/eco-village';
-  };
+
+  if (
+    t.includes('learn') ||
+    t.includes('course') ||
+    t.includes('video')
+  )
+    return '/learn';
+
+  if (t.includes('event'))
+    return '/events';
+
+  if (t.includes('community'))
+    return '/community';
+
+  return '/eco-village';
+};
 
   const startChallenge = (title: string) => navigate(routeFor(title));
 
