@@ -13,7 +13,6 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>('light');
-  const [mounted, setMounted] = useState(false);
 
   // Initialize theme on mount
   useEffect(() => {
@@ -27,7 +26,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     setThemeState(initialTheme);
     applyTheme(initialTheme);
-    setMounted(true);
   }, []);
 
   const applyTheme = (newTheme: Theme) => {
@@ -50,10 +48,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
   };
-
-  if (!mounted) {
-    return <>{children}</>;
-  }
 
   return (
     <ThemeContext.Provider value={{ theme, isDark: theme === 'dark', toggleTheme, setTheme }}>
