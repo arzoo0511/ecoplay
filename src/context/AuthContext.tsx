@@ -31,12 +31,87 @@ function toAppUser(supabaseUser: any): User {
     email: supabaseUser.email ?? "",
     name:
       supabaseUser.user_metadata?.name ||
+      supabaseUser.user_metadata?.full_name ||
       supabaseUser.email?.split("@")[0] ||
       "Player",
     avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
   };
 }
 
+async function ensureUserProfile(supabaseUser: any) {
+  try {
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", supabaseUser.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error(
+        "[Auth] Error checking user profile:",
+        profileError.message,
+      );
+      return;
+    }
+
+    if (!profile) {
+      const name =
+        supabaseUser.user_metadata?.full_name ||
+        supabaseUser.user_metadata?.name ||
+        supabaseUser.email?.split("@")[0] ||
+        "EcoPlayer";
+      const avatarUrl = supabaseUser.user_metadata?.avatar_url || null;
+
+      const { error: insertError } = await supabase.from("users").insert([
+        {
+          id: supabaseUser.id,
+          email: supabaseUser.email,
+          name: name,
+          avatar_url: avatarUrl,
+          points: 0,
+          level: 1,
+          eco_score: 0,
+        },
+      ]);
+
+      if (insertError) {
+        console.error(
+          "[Auth] Error creating user profile:",
+          insertError.message,
+        );
+      } else {
+        console.log(
+          "[Auth] User profile created for OAuth/Login:",
+          supabaseUser.id,
+        );
+      }
+
+      const { error: villageError } = await supabase
+        .from("eco_villages")
+        .insert([
+          {
+            user_id: supabaseUser.id,
+            air_quality: 20,
+            water_quality: 20,
+            biodiversity: 10,
+            trees: 0,
+            solar_panels: 0,
+            water_filters: 0,
+            pollution_level: 80,
+          },
+        ]);
+
+      if (villageError) {
+        console.error(
+          "[Auth] Error creating eco village:",
+          villageError.message,
+        );
+      }
+    }
+  } catch (err) {
+    console.error("[Auth] Error ensuring user profile:", err);
+  }
+}
 const authSetupMessage =
   supabaseConfigError ||
   "Authentication is not configured. Add your Supabase credentials to .env.";
@@ -45,8 +120,9 @@ export const AuthProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() =>
-    isGuestMode() ? guestUser : null
+    isGuestMode() ? guestUser : null,
   );
+
   const [loading, setLoading] = useState(true);
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
   const [isGuest, setIsGuest] = useState<boolean>(isGuestMode());
@@ -60,30 +136,43 @@ export const AuthProvider: React.FC<{
       return;
     }
 
+    console.log("[AuthDebug] Initializing AuthProvider...");
     supabase.auth
       .getSession()
       .then(({ data: { session } }) => {
-        setUser(
-          session?.user ? toAppUser(session.user) : isGuestMode() ? guestUser : null
+        console.log(
+          "[AuthDebug] getSession returned session:",
+          session ? "FOUND" : "NULL",
         );
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("[Auth] Session restore failed:", error);
-        setSupabaseError(
-          getAuthErrorMessage(
-            error,
-            "Unable to connect to Supabase. Some features may be unavailable."
-          )
+        if (session?.user) {
+          console.log("[AuthDebug] User found in session:", session.user.email);
+          ensureUserProfile(session.user);
+        }
+        setUser(
+          session?.user
+            ? toAppUser(session.user)
+            : isGuestMode()
+              ? guestUser
+              : null,
         );
         setUser(isGuestMode() ? guestUser : null);
         setLoading(false);
+      })
+      .catch((err) => {
+        console.error("[AuthDebug] getSession error:", err);
       });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log(
+        "[AuthDebug] onAuthStateChange event:",
+        event,
+        "session:",
+        session ? "FOUND" : "NULL",
+      );
       if (session?.user) {
+        ensureUserProfile(session.user);
         setUser(toAppUser(session.user));
       } else {
         setUser(isGuestMode() ? guestUser : null);
@@ -99,7 +188,7 @@ export const AuthProvider: React.FC<{
   const register = async (
     name: string,
     email: string,
-    password: string
+    password: string,
   ): Promise<AuthResponse> => {
     if (!isSupabaseConfigured) {
       return {
@@ -181,7 +270,7 @@ export const AuthProvider: React.FC<{
 
   const login = async (
     email: string,
-    password: string
+    password: string,
   ): Promise<AuthResponse> => {
     if (!isSupabaseConfigured) {
       return {
@@ -228,7 +317,32 @@ export const AuthProvider: React.FC<{
     }
   };
 
-  const forgotPassword = async (email: string) => {
+  const loginWithGoogle = async (): Promise<AuthResponse> => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      console.error("[Auth] Google Login error:", err);
+      return {
+        success: false,
+        error: "An unexpected error occurred during Google sign in.",
+      };
+    }
+  };
+
+  const forgotPassword = async (
+    email: string,
+  ): Promise<{ success: boolean; error?: string }> => {
     if (!isSupabaseConfigured) {
       return {
         success: false,
@@ -240,27 +354,18 @@ export const AuthProvider: React.FC<{
       const { error } = await supabase.auth.resetPasswordForEmail(
         email.trim().toLowerCase(),
         {
-          redirectTo: window.location.origin,
-        }
+          redirectTo: `${window.location.origin}/login`,
+        },
       );
 
       if (error) {
-        return {
-          success: false,
-          error: getAuthErrorMessage(error, "Failed to send reset email."),
-        };
+        return { success: false, error: error.message };
       }
 
-      return {
-        success: true,
-      };
+      return { success: true };
     } catch (err: any) {
-      console.error("[Auth] Forgot password error:", err);
-
-      return {
-        success: false,
-        error: getAuthErrorMessage(err, "Failed to send reset email."),
-      };
+      console.error("[Auth] Reset password error:", err);
+      return { success: false, error: "An unexpected error occurred." };
     }
   };
 
@@ -275,7 +380,7 @@ export const AuthProvider: React.FC<{
     setIsGuest(false);
     setShowMergePrompt(false);
     setUser((currentUser) =>
-      currentUser?.id === guestUser.id ? null : currentUser
+      currentUser?.id === guestUser.id ? null : currentUser,
     );
   };
 
@@ -290,8 +395,8 @@ export const AuthProvider: React.FC<{
     const userPoints = userState?.user?.points ?? 0;
     const mergedBase =
       guestPoints >= userPoints
-        ? guestState ?? userState
-        : userState ?? guestState;
+        ? (guestState ?? userState)
+        : (userState ?? guestState);
 
     if (mergedBase) {
       saveState({
@@ -341,6 +446,7 @@ export const AuthProvider: React.FC<{
         isGuest,
         showMergePrompt,
         login,
+        loginWithGoogle,
         register,
         forgotPassword,
         enterGuest,
