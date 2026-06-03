@@ -18,6 +18,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGamification } from '../hooks/useGamification';
+import { LEVEL_THRESHOLDS } from '../lib/gamification';
 import { RecommendedChallenges } from '../components/RecommendedChallenges';
 import { CommunityProgress } from '../components/CommunityProgress';
 
@@ -37,6 +38,14 @@ const loading =
 
   const multiplierColor = (m: number) =>
     m >= 3 ? 'text-yellow-300' : m >= 2 ? 'text-orange-300' : m >= 1.5 ? 'text-green-300' : 'text-white';
+
+  const currentThreshold = LEVEL_THRESHOLDS[stats?.currentLevel ?? 1] ?? 0;
+  const nextThreshold = LEVEL_THRESHOLDS[(stats?.currentLevel ?? 1) + 1];
+  const xpForLevel = nextThreshold != null ? nextThreshold - currentThreshold : 0;
+  const xpEarned = nextThreshold != null ? (stats?.totalXP ?? 0) - currentThreshold : 0;
+  const levelProgress = nextThreshold != null && xpForLevel > 0
+    ? Math.min(100, Math.round((xpEarned / xpForLevel) * 100))
+    : (stats ? 100 : 0);
 
   if (loading) return (
   <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -109,13 +118,22 @@ const loading =
           <>
             <div className="text-5xl font-black text-green-400 mb-1">Lv.{stats.currentLevel}</div>
             <div className="text-white/70 text-sm mb-4">{stats.totalXP.toLocaleString()} total XP</div>
-            <div className="h-3 bg-white/20 rounded-full overflow-hidden mb-2">
+            <div
+              className="h-3 bg-white/20 rounded-full overflow-hidden mb-2"
+              title={nextThreshold != null
+                ? `${xpEarned.toLocaleString()} / ${xpForLevel.toLocaleString()} XP to Level ${stats.currentLevel + 1}`
+                : 'Max level reached!'}
+            >
               <div
-                className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-700"
-                style={{ width: `${Math.min(100, 100 - (stats.xpToNextLevel / (stats.xpToNextLevel + 100)) * 100)}%` }}
+                className="h-full bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500 rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${levelProgress}%` }}
               />
             </div>
-            <p className="text-xs text-white/50">{stats.xpToNextLevel} XP to next level</p>
+            <p className="text-xs text-white/50">
+              {nextThreshold != null
+                ? `${stats.xpToNextLevel.toLocaleString()} XP to next level · ${levelProgress}%`
+                : 'Max level reached!'}
+            </p>
             {userRank && (
               <p className="mt-3 text-sm text-yellow-300 font-semibold">🏅 Global Rank #{userRank}</p>
             )}

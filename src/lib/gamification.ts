@@ -55,6 +55,14 @@ export interface LeaderboardEntry {
   currentStreak: number;
 }
 
+// ─── Level Thresholds ────────────────────────────────────────
+// Mirrors level_thresholds table in the DB.
+// Used client-side to compute accurate progress bar percentages.
+export const LEVEL_THRESHOLDS: Record<number, number> = {
+  1: 0, 2: 100, 3: 250, 4: 500, 5: 900,
+  6: 1400, 7: 2100, 8: 3000, 9: 4200, 10: 6000,
+};
+
 // ─── Streak Multiplier ────────────────────────────────────────
 
 export function computeStreakMultiplier(currentStreak: number): number {
