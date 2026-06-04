@@ -19,6 +19,7 @@ import {
 import { dbFunctions, CommunityPost } from '../lib/supabase';
 
 const Community = () => {
+ feature/mobile-responsiveness-dashboard
 
   
  
@@ -33,11 +34,22 @@ React.useEffect(() => {
 
 
   const { isGuest } = useAuth();
+
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
+  const { isGuest ,  user } = useAuth();
+
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewPost, setShowNewPost] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState({
     title: '',
     content: '',
@@ -47,7 +59,7 @@ React.useEffect(() => {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [replyModal, setReplyModal] = useState<{ open: boolean; postId?: string }>({ open: false });
   const [replyText, setReplyText] = useState('');
-  
+
   // Track which posts the user has liked in this session
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
 
@@ -78,7 +90,7 @@ React.useEffect(() => {
   const handleLike = async (id: string) => {
     const isLiked = likedPosts.has(id);
     const increment = !isLiked;
-    
+
     // Optimistic UI
     setPosts((prev) =>
       prev.map((post) =>
@@ -135,7 +147,7 @@ React.useEffect(() => {
   const submitReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyModal.postId || !replyText.trim()) return;
-    
+
     const postId = replyModal.postId;
 
     setPosts((prev) =>
@@ -180,7 +192,7 @@ React.useEffect(() => {
 
     setShowNewPost(false);
     setNewPost({ title: '', content: '', category: 'question', tags: '' });
-    
+
     // Optimistically show loading, but re-fetch everything
     setLoading(true);
     const success = await dbFunctions.createCommunityPost(postToCreate);
@@ -195,7 +207,7 @@ React.useEffect(() => {
   const filteredPosts = posts.filter((post) => {
     const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory;
     const loweredSearch = searchTerm.toLowerCase();
-    
+
     // Ensure safety in case arrays or strings are null from DB
     const safeTitle = post.title || '';
     const safeContent = post.content || '';
@@ -205,7 +217,7 @@ React.useEffect(() => {
       safeTitle.toLowerCase().includes(loweredSearch) ||
       safeContent.toLowerCase().includes(loweredSearch) ||
       safeTags.some((tag) => tag.toLowerCase().includes(loweredSearch));
-      
+
     return matchesCategory && matchesSearch;
   });
 
@@ -230,68 +242,68 @@ React.useEffect(() => {
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   };
   if (loading) {
-  return (
-    <div className="space-y-6 animate-pulse">
+    return (
+      <div className="space-y-6 animate-pulse">
 
-      {/* Header Skeleton */}
-      <div className="text-center space-y-4">
-        <div className="h-10 w-64 bg-white/10 rounded-full mx-auto"></div>
-        <div className="h-4 w-96 bg-white/10 rounded-full mx-auto"></div>
-      </div>
+        {/* Header Skeleton */}
+        <div className="text-center space-y-4">
+          <div className="h-10 w-64 bg-white/10 rounded-full mx-auto"></div>
+          <div className="h-4 w-96 bg-white/10 rounded-full mx-auto"></div>
+        </div>
 
-      {/* Search Bar */}
-      <div className="flex gap-4">
-        <div className="h-14 flex-1 rounded-2xl bg-white/10"></div>
-        <div className="h-14 w-40 rounded-2xl bg-white/10"></div>
-      </div>
+        {/* Search Bar */}
+        <div className="flex gap-4">
+          <div className="h-14 flex-1 rounded-2xl bg-white/10"></div>
+          <div className="h-14 w-40 rounded-2xl bg-white/10"></div>
+        </div>
 
-      {/* Category Chips */}
-      <div className="flex gap-3">
-        {[1,2,3,4].map((item) => (
+        {/* Category Chips */}
+        <div className="flex gap-3">
+          {[1, 2, 3, 4].map((item) => (
+            <div
+              key={item}
+              className="h-10 w-28 rounded-full bg-white/10"
+            />
+          ))}
+        </div>
+
+        {/* Posts Skeleton */}
+        {[1, 2, 3].map((post) => (
           <div
-            key={item}
-            className="h-10 w-28 rounded-full bg-white/10"
-          />
-        ))}
-      </div>
+            key={post}
+            className="relative overflow-hidden bg-white/[0.06] backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-xl"
+          >
+            <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-      {/* Posts Skeleton */}
-      {[1,2,3].map((post) => (
-        <div
-          key={post}
-          className="relative overflow-hidden bg-white/[0.06] backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-xl"
-        >
-          <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            <div className="relative z-10 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-white/10"></div>
 
-          <div className="relative z-10 space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-full bg-white/10"></div>
+                <div className="flex-1">
+                  <div className="h-4 w-32 rounded-full bg-white/10 mb-2"></div>
+                  <div className="h-3 w-24 rounded-full bg-white/5"></div>
+                </div>
+              </div>
 
-              <div className="flex-1">
-                <div className="h-4 w-32 rounded-full bg-white/10 mb-2"></div>
-                <div className="h-3 w-24 rounded-full bg-white/5"></div>
+              <div className="h-6 w-3/4 rounded-full bg-white/10"></div>
+
+              <div className="space-y-2">
+                <div className="h-3 rounded-full bg-white/10"></div>
+                <div className="h-3 rounded-full bg-white/10 w-5/6"></div>
+                <div className="h-3 rounded-full bg-white/10 w-4/6"></div>
+              </div>
+
+              <div className="flex gap-2">
+                <div className="h-8 w-20 rounded-full bg-white/10"></div>
+                <div className="h-8 w-20 rounded-full bg-white/10"></div>
+                <div className="h-8 w-20 rounded-full bg-white/10"></div>
               </div>
             </div>
-
-            <div className="h-6 w-3/4 rounded-full bg-white/10"></div>
-
-            <div className="space-y-2">
-              <div className="h-3 rounded-full bg-white/10"></div>
-              <div className="h-3 rounded-full bg-white/10 w-5/6"></div>
-              <div className="h-3 rounded-full bg-white/10 w-4/6"></div>
-            </div>
-
-            <div className="flex gap-2">
-              <div className="h-8 w-20 rounded-full bg-white/10"></div>
-              <div className="h-8 w-20 rounded-full bg-white/10"></div>
-              <div className="h-8 w-20 rounded-full bg-white/10"></div>
-            </div>
           </div>
-        </div>
-      ))}
-    </div>
-  );
-}
+        ))}
+      </div>
+    );
+  }
 
   if (isGuest) {
     return (
@@ -370,11 +382,10 @@ React.useEffect(() => {
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
-              className={`${chipBase} ${
-                selectedCategory === category.id
-                  ? 'border-blue-700 bg-blue-900 text-white dark:border-emerald-500 dark:bg-gradient-to-r dark:from-emerald-500 dark:to-teal-500'
-                  : 'border-slate-200/80 bg-white/88 text-slate-800 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10'
-              }`}
+              className={`${chipBase} ${selectedCategory === category.id
+                ? 'border-blue-700 bg-blue-900 text-white dark:border-emerald-500 dark:bg-gradient-to-r dark:from-emerald-500 dark:to-teal-500'
+                : 'border-slate-200/80 bg-white/88 text-slate-800 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10'
+                }`}
             >
               {category.name}
             </button>
@@ -446,11 +457,10 @@ React.useEffect(() => {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => handleLike(post.id)}
-                    className={`flex items-center space-x-2 rounded-lg px-3 py-2 transition-theme duration-300 ${
-                      likedPosts.has(post.id)
-                        ? 'bg-green-100 text-green-900 dark:text-emerald-300'
-                        : 'border border-slate-200/80 bg-white/88 text-slate-800 hover:bg-white dark:border dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10'
-                    }`}
+                    className={`flex items-center space-x-2 rounded-lg px-3 py-2 transition-theme duration-300 ${likedPosts.has(post.id)
+                      ? 'bg-green-100 text-green-900 dark:text-emerald-300'
+                      : 'border border-slate-200/80 bg-white/88 text-slate-800 hover:bg-white dark:border dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10'
+                      }`}
                   >
                     <ThumbsUp className="h-4 w-4" />
                     <span className="text-sm font-medium">{post.likes}</span>

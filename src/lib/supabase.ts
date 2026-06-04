@@ -3,8 +3,18 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Use fallback placeholder strings if variables are undefined or default to prevent createClient
+// from throwing an uncaught exception at module import time, which otherwise causes a blank white screen.
+// This allows the ConfigErrorScreen to gracefully render and instruct the user how to configure the app.
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder-url.supabase.co',
+  supabaseAnonKey && supabaseAnonKey !== "your-anon-key"
+    ? supabaseAnonKey
+    : 'placeholder-anon-key'
+)
+
 const isPlaceholderValue = (value: string | undefined) =>
-  !value || value.includes('your-project') || value.includes('your-anon-key');
+  !value || value.includes('your-project') || value.includes('your-anon-key') || value.includes('placeholder');
 
 export const supabaseConfigError = isPlaceholderValue(supabaseUrl)
   ? 'Missing VITE_SUPABASE_URL. Add your Supabase project URL to .env.'
@@ -14,25 +24,22 @@ export const supabaseConfigError = isPlaceholderValue(supabaseUrl)
 
 export const isSupabaseConfigured = !supabaseConfigError;
 
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-anon-key'
-);
+
 
 
 // // Database types
-// export interface User {
-//   id: string;
-//   email: string;
-//   name: string;
-//   avatar_url?: string | null;
-//   points: number;
-//   level: number;
-//   eco_score: number;
-//   badges: string[];
-//   created_at: string;
-//   updated_at: string;
-// }
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar_url?: string | null;
+  points: number;
+  level: number;
+  eco_score: number;
+  badges: string[];
+  created_at: string;
+  updated_at: string;
+}
 
 export interface EcoVillage {
   id: string;
