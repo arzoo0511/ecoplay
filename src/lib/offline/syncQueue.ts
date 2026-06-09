@@ -204,11 +204,12 @@ export async function runSync(supabaseInstance: SupabaseLike): Promise<void> {
             incrementRetry(write.id);
           }
         }
-      } catch {
+      } catch (err) {
+        console.warn('[Sync] Failed to process write:', write.type, write.id, err);
         incrementRetry(write.id);
       }
     }
-  } catch {
-    // keep pending writes queued
+  } catch (err) {
+    console.warn('[Sync] Unexpected error during sync run:', err);
   }
 }
