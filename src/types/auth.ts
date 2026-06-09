@@ -18,6 +18,7 @@ export interface AuthContextType {
     isGuest: boolean;
     showMergePrompt: boolean;
     login: (email: string, password: string) => Promise<AuthResponse>;
+    loginWithGoogle: () => Promise<AuthResponse>;
     forgotPassword: (
             email: string
             ) => Promise<{

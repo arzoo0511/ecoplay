@@ -252,6 +252,11 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
+Find these values in Supabase under **Project Settings -> API**:
+
+- `VITE_SUPABASE_URL`: copy the **Project URL** value.
+- `VITE_SUPABASE_ANON_KEY`: copy the **anon public** API key.
+
 > **Note:** Only `VITE_` prefixed variables are accessible in the browser. This project uses Supabase Auth, so no custom JWT secret or database connection string is needed on the client.
 
 ### Supabase Setup
@@ -315,6 +320,8 @@ vercel --prod
 ```
 
 Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in your Vercel project's **Environment Variables** settings.
+
+In Vercel, open your project and go to **Settings -> Environment Variables**. Add both variables for **Production**, **Preview**, and **Development** environments, then redeploy the project so Vercel picks up the new values.
 
 ### Deploy to Netlify
 

@@ -18,6 +18,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGamification } from '../hooks/useGamification';
+import { LEVEL_THRESHOLDS } from '../lib/gamification';
 import { RecommendedChallenges } from '../components/RecommendedChallenges';
 import { CommunityProgress } from '../components/CommunityProgress';
 
@@ -25,7 +26,12 @@ import { CommunityProgress } from '../components/CommunityProgress';
 // ─── XP Panel Component ───────────────────────────────────────
 
 const XPPanel: React.FC<{ authUser: any }> = ({ authUser }) => {
-  const { stats, streak, badges, leaderboard, userRank, loading } = useGamification(authUser?.id ?? null);
+  const { stats, streak, badges, leaderboard, userRank } = useGamification(authUser?.id ?? null);
+
+const loading =
+  stats === null ||
+  streak === null ||
+  leaderboard === null;
 
   const streakEmoji = (s: number) =>
     s >= 30 ? '💎' : s >= 14 ? '⚡' : s >= 7 ? '🔥' : s >= 3 ? '✨' : '🌱';
@@ -33,11 +39,74 @@ const XPPanel: React.FC<{ authUser: any }> = ({ authUser }) => {
   const multiplierColor = (m: number) =>
     m >= 3 ? 'text-yellow-300' : m >= 2 ? 'text-orange-300' : m >= 1.5 ? 'text-green-300' : 'text-white';
 
+  const currentThreshold = LEVEL_THRESHOLDS[stats?.currentLevel ?? 1] ?? 0;
+  const nextThreshold = LEVEL_THRESHOLDS[(stats?.currentLevel ?? 1) + 1];
+  const xpForLevel = nextThreshold != null ? nextThreshold - currentThreshold : 0;
+  const xpEarned = nextThreshold != null ? (stats?.totalXP ?? 0) - currentThreshold : 0;
+  const levelProgress = nextThreshold != null && xpForLevel > 0
+    ? Math.min(100, Math.round((xpEarned / xpForLevel) * 100))
+    : (stats ? 100 : 0);
+
   if (loading) return (
-    <div className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 text-white text-center">
-      Loading XP data...
+  <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    {/* XP Card */}
+    <div className="relative overflow-hidden bg-white/[0.06] backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-xl">
+
+      {/* shimmer */}
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+      <div className="space-y-5 relative z-10">
+        <div className="h-5 w-40 rounded-full bg-white/10"></div>
+
+        <div className="flex items-center gap-4">
+          <div className="h-16 w-16 rounded-2xl bg-white/10"></div>
+
+          <div className="flex-1 space-y-3">
+            <div className="h-4 w-36 rounded-full bg-white/10"></div>
+            <div className="h-3 w-24 rounded-full bg-white/5"></div>
+          </div>
+        </div>
+
+        <div className="h-3 rounded-full bg-white/10"></div>
+      </div>
     </div>
-  );
+
+    {/* Progress Card */}
+    <div className="relative overflow-hidden bg-white/[0.06] backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-xl">
+
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+      <div className="relative z-10 space-y-5">
+        <div className="h-5 w-44 rounded-full bg-white/10"></div>
+
+        <div className="h-32 rounded-2xl bg-white/10"></div>
+
+        <div className="space-y-3">
+          <div className="h-3 rounded-full bg-white/10"></div>
+          <div className="h-3 rounded-full w-4/5 bg-white/5"></div>
+        </div>
+      </div>
+    </div>
+
+    {/* Leaderboard */}
+    <div className="relative overflow-hidden bg-white/[0.06] backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-xl">
+
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+      <div className="relative z-10 space-y-4">
+        <div className="h-5 w-36 rounded-full bg-white/10 mb-4"></div>
+
+        {[1, 2, 3].map((item) => (
+          <div
+            key={item}
+            className="h-14 rounded-2xl bg-white/10"
+          />
+        ))}
+      </div>
+    </div>
+  </div>
+);
 
   return (
     <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -49,13 +118,22 @@ const XPPanel: React.FC<{ authUser: any }> = ({ authUser }) => {
           <>
             <div className="text-5xl font-black text-green-400 mb-1">Lv.{stats.currentLevel}</div>
             <div className="text-white/70 text-sm mb-4">{stats.totalXP.toLocaleString()} total XP</div>
-            <div className="h-3 bg-white/20 rounded-full overflow-hidden mb-2">
+            <div
+              className="h-3 bg-white/20 rounded-full overflow-hidden mb-2"
+              title={nextThreshold != null
+                ? `${xpEarned.toLocaleString()} / ${xpForLevel.toLocaleString()} XP to Level ${stats.currentLevel + 1}`
+                : 'Max level reached!'}
+            >
               <div
-                className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-700"
-                style={{ width: `${Math.min(100, 100 - (stats.xpToNextLevel / (stats.xpToNextLevel + 100)) * 100)}%` }}
+                className="h-full bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500 rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${levelProgress}%` }}
               />
             </div>
-            <p className="text-xs text-white/50">{stats.xpToNextLevel} XP to next level</p>
+            <p className="text-xs text-white/50">
+              {nextThreshold != null
+                ? `${stats.xpToNextLevel.toLocaleString()} XP to next level · ${levelProgress}%`
+                : 'Max level reached!'}
+            </p>
             {userRank && (
               <p className="mt-3 text-sm text-yellow-300 font-semibold">🏅 Global Rank #{userRank}</p>
             )}
@@ -97,7 +175,10 @@ const XPPanel: React.FC<{ authUser: any }> = ({ authUser }) => {
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-yellow-300 w-6">#{entry.rank}</span>
+                  <span className="text-sm font-bold text-yellow-300 w-6">
+                    #{entry.rank}
+                  </span>
+
                   {entry.avatarUrl ? (
                     <img
                       src={entry.avatarUrl}
@@ -109,8 +190,11 @@ const XPPanel: React.FC<{ authUser: any }> = ({ authUser }) => {
                       {entry.username.slice(0, 2).toUpperCase()}
                     </div>
                   )}
-                  <span className="text-sm text-white truncate max-w-[80px]">{entry.username}</span>
-                </div>
+
+                  <span className="text-sm text-white truncate max-w-[80px]">
+                    {entry.username}
+                  </span>
+		</div>
                 <div className="text-right">
                   <p className="text-xs font-bold text-green-400">{entry.totalXP.toLocaleString()} XP</p>
                   <p className="text-xs text-white/40">Lv.{entry.currentLevel}</p>
@@ -151,6 +235,7 @@ const Dashboard = () => {
     icon: "🌱",
     required: 0,
     color: "from-green-400 to-emerald-500",
+    description: "Start your sustainability journey and earn your first eco points."
   },
   {
     id: 2,
@@ -158,6 +243,7 @@ const Dashboard = () => {
     icon: "🌊",
     required: 100,
     color: "from-blue-400 to-cyan-500",
+    description: "Collect trash and help keep oceans clean by reaching 100 points."
   },
   {
     id: 3,
@@ -165,6 +251,7 @@ const Dashboard = () => {
     icon: "🌳",
     required: 250,
     color: "from-lime-400 to-green-500",
+    description: "Show your dedication to nature by reaching 250 eco points."
   },
   {
     id: 4,
@@ -172,6 +259,7 @@ const Dashboard = () => {
     icon: "♻️",
     required: 500,
     color: "from-yellow-400 to-orange-500",
+    description: "Promote responsible waste management and achieve 500 points."
   },
   {
     id: 5,
@@ -179,6 +267,7 @@ const Dashboard = () => {
     icon: "🏆",
     required: 1000,
     color: "from-purple-400 to-pink-500",
+    description: "Become a true environmental leader by earning 1000 eco points."
   },
 ];
 
@@ -188,6 +277,15 @@ const Dashboard = () => {
   const { user: authUser } = useAuth();
 
   const [timeLeft, setTimeLeft] = useState('');
+
+  const currentStreak = streakState?.streak_count ?? 0;
+  const availableFreezes =
+    streakState?.streak_freeze_count ?? 0;
+
+  const freezeRing = `${Math.max(
+    0,
+    Math.min(100, availableFreezes * 100)
+  )}%`;
 
   useEffect(() => {
     if (!state.lastChallengeRefresh) return;
@@ -215,7 +313,22 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [state.lastChallengeRefresh]);
 
-  const useCounter = (end: number, duration: number = 2000) => {
+  React.useEffect(() => {
+    if (!notifications.length) return;
+
+    const timer = window.setTimeout(() => {
+      dispatch({ type: 'CLEAR_NOTIFICATIONS' });
+    }, 3600);
+
+    return () => window.clearTimeout(timer);
+  }, [dispatch, notifications.length]);
+
+
+
+  const useCounter = (
+    end: number,
+    duration: number = 2000
+  ) => {
     const [count, setCount] = useState(0);
     useEffect(() => {
       let startTime: number;
@@ -236,10 +349,30 @@ const Dashboard = () => {
   const animatedPoints = useCounter(totalPoints);
 
   const calculateEcoScore = () => {
-    const villageScore = (ecoVillage.airQuality + ecoVillage.waterQuality + ecoVillage.biodiversity) / 3;
-    const activityScore = Math.min(100, (gameStats.totalTrashCollected / 10) + (ecoVillage.trees / 2));
-    const completionScore = dailyChallenges.length ? (dailyChallenges.filter(c => c.completed).length / dailyChallenges.length) * 100 : 0;
-    return Math.round((villageScore * 0.4) + (activityScore * 0.3) + (completionScore * 0.3));
+    const villageScore =
+      (ecoVillage.airQuality +
+        ecoVillage.waterQuality +
+        ecoVillage.biodiversity) /
+      3;
+
+    const activityScore = Math.min(
+      100,
+      gameStats.totalTrashCollected / 10 +
+        ecoVillage.trees / 2
+    );
+
+    const completionScore = dailyChallenges.length
+      ? (dailyChallenges.filter((c) => c.completed)
+          .length /
+          dailyChallenges.length) *
+        100
+      : 0;
+
+    return Math.round(
+      villageScore * 0.4 +
+        activityScore * 0.3 +
+        completionScore * 0.3
+    );
   };
 
   const ecoScore = calculateEcoScore();
@@ -249,14 +382,36 @@ const Dashboard = () => {
   const ecoScoreChange = Math.floor((ecoScore - 65) / 5);
 
   const routeFor = (text: string) => {
-    const t = text.toLowerCase();
-    if (t.includes('cleanup') || t.includes('ocean')) return '/ocean-cleanup-game';
-    if (t.includes('water') || t.includes('tree') || t.includes('eco')) return '/eco-village';
-    if (t.includes('learn') || t.includes('course') || t.includes('video')) return '/learn';
-    if (t.includes('event')) return '/events';
-    if (t.includes('community')) return '/community';
+  const t = text.toLowerCase();
+
+  if (
+    t.includes('cleanup') ||
+    t.includes('ocean')
+  )
+    return '/ocean-cleanup-game';
+
+  if (
+    t.includes('water') ||
+    t.includes('tree') ||
+    t.includes('eco')
+  )
     return '/eco-village';
-  };
+
+  if (
+    t.includes('learn') ||
+    t.includes('course') ||
+    t.includes('video')
+  )
+    return '/learn';
+
+  if (t.includes('event'))
+    return '/events';
+
+  if (t.includes('community'))
+    return '/community';
+
+  return '/eco-village';
+};
 
   const startChallenge = (title: string) => navigate(routeFor(title));
 
@@ -584,7 +739,8 @@ const Dashboard = () => {
 
       return (
         <motion.div
-          whileHover={{ scale: 1.05 }}
+          title={`${badge.name} - ${badge.description}`}
+whileHover={{ scale: 1.05, y: -5 }}
           key={badge.id}
           className={`rounded-2xl p-5 text-center transition-all duration-300 ${
             unlocked
@@ -596,9 +752,19 @@ const Dashboard = () => {
             {badge.icon}
           </div>
 
-          <h3 className="font-bold text-lg mb-2">
-            {badge.name}
-          </h3>
+         <h3 className="font-bold text-lg mb-2">
+  {badge.name}
+</h3>
+
+<p className="text-sm opacity-90 mb-2">
+  {unlocked
+    ? "Unlocked 🎉"
+    : `${badge.required} points needed`}
+</p>
+
+<div className="text-xs opacity-80">
+  {badge.description}
+</div>
 
           <p className="text-sm opacity-90">
             {unlocked

@@ -21,6 +21,7 @@ const Events = React.lazy(() => import('./pages/Events'));
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
 const Learn = React.lazy(() => import('./pages/Learn'));
 const OceanCleanupGame = React.lazy(() => import('./pages/OceanCleanupGame'));
+const Journey = React.lazy(() => import('./pages/Journey'));
 
 /**
  * Protects routes that require authentication.
@@ -55,10 +56,11 @@ const AppRoutes = () => {
           pendingCount={pendingCount}
         />
         <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<Auth />} />
+          <Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-white text-xl">Loading...</div>}>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Auth />} />
 
             {/* Protected routes */}
             <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
@@ -70,9 +72,10 @@ const AppRoutes = () => {
             <Route path="/community/post/:postId" element={<Protected><PostDetail /></Protected>}/>
             <Route path="/events" element={<Protected><Events /></Protected>} />
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </>
     );

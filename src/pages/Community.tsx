@@ -150,6 +150,9 @@ const Community = () => {
   // Tracking post liked status for current user
   const [userLikedPostIds, setUserLikedPostIds] = useState<Set<string>>(new Set());
 
+  // Track which posts the user has liked in this session
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+
   const categories = [
     { id: 'all', name: 'All Posts' },
     { id: 'question', name: 'Questions' },

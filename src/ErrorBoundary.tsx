@@ -4,7 +4,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
   static getDerivedStateFromError(error: any) { return { error }; }
   render() {
     if (this.state.error) {
-      return <div style={{ color: 'white', padding: 32 }}>Error: {String(this.state.error)}</div>;
+      return <div style={{ backgroundColor: 'black', color: 'white', padding: 32 }}>Error: {String(this.state.error)}</div>;
     }
     return this.props.children;
   }

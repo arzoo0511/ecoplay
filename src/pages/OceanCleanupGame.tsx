@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../context/GameContext';
-import { 
-  TbPlayerPlay, 
-  TbTrophy, 
-  TbTarget, 
-  TbClock, 
+import { useAuth } from '../context/AuthContext';
+import { dbFunctions } from '../lib/supabase';
+import {
+  TbPlayerPlay,
+  TbTrophy,
+  TbTarget,
+  TbClock,
   TbStar,
   TbTrash
 } from 'react-icons/tb';
@@ -36,7 +38,17 @@ const TRASH_TYPES = {
 } as const;
 
 const OceanCleanupGame = () => {
+  const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  const timer = setTimeout(() => {
+    setLoading(false);
+  }, 1500);
+
+  return () => clearTimeout(timer);
+}, []);
   const { state, dispatch } = useGame();
+  const { user: authUser } = useAuth();
   const [gameActive, setGameActive] = useState(false);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30); // CHANGED: 30 seconds
@@ -59,9 +71,22 @@ const OceanCleanupGame = () => {
   const hasCommittedScoreRef = useRef(false);
   const scoreRef = useRef(score);
   const totalCollectedRef = useRef(totalCollected);
+  const fishHitsRef = useRef(0);
+  const maxComboRef = useRef(0);
+  const bestScoreRef = useRef(0);
+
+  const [endStats, setEndStats] = useState({
+    isPerfect: false,
+    isNewHighScore: false,
+    maxCombo: 0,
+    fishHits: 0,
+  });
 
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { totalCollectedRef.current = totalCollected; }, [totalCollected]);
+  useEffect(() => {
+    if (combo > maxComboRef.current) maxComboRef.current = combo;
+  }, [combo]);
 
 
   // Generate single trash item
@@ -116,8 +141,9 @@ const OceanCleanupGame = () => {
     setTimeLeft(30); // CHANGED: 30 seconds
     setCombo(0);
     setTotalCollected(0);
-    // Reset guard so the new round can award points at game end.
     hasCommittedScoreRef.current = false;
+    fishHitsRef.current = 0;
+    maxComboRef.current = 0;
     generateInitialTrash();
     generateFish();
   };
@@ -146,7 +172,8 @@ const OceanCleanupGame = () => {
 
   const handleFishCollision = useCallback(() => {
     if (!gameActive) return;
-    
+
+    fishHitsRef.current += 1;
     setScore(prev => Math.max(0, prev - 5));
     setCombo(0);
     
@@ -219,25 +246,62 @@ const OceanCleanupGame = () => {
 
     const finalScore = scoreRef.current;
     const finalCollected = totalCollectedRef.current;
+    const isPerfect = fishHitsRef.current === 0 && finalCollected > 0;
+    const hadHighCombo = maxComboRef.current >= 5;
+    const isNewBest = finalScore > bestScoreRef.current;
+    if (isNewBest) bestScoreRef.current = finalScore;
 
-    // Commit final round score to GameContext exactly once per round.
+    setEndStats({
+      isPerfect,
+      isNewHighScore: isNewBest,
+      maxCombo: maxComboRef.current,
+      fishHits: fishHitsRef.current,
+    });
+
+    const activityType = isPerfect
+      ? 'ocean_cleanup_perfect'
+      : hadHighCombo
+        ? 'ocean_cleanup_combo'
+        : 'ocean_cleanup_basic';
+
     if (finalScore > 0 && !hasCommittedScoreRef.current) {
       hasCommittedScoreRef.current = true;
-      dispatch({ type: 'ADD_POINTS', payload: finalScore });
+      dispatch({
+        type: 'ADD_POINTS',
+        payload: finalScore,
+        activityType,
+        metadata: {
+          score: finalScore,
+          trashCollected: finalCollected,
+          maxCombo: maxComboRef.current,
+          perfect: isPerfect,
+        },
+      });
     }
 
     dispatch({
       type: 'UPDATE_OCEAN_STATS',
       payload: {
         totalTrashCollected: (state.gameStats?.totalTrashCollected || 0) + finalCollected,
-        perfectCleanups: state.gameStats?.perfectCleanups || 0
-      }
+        perfectCleanups: (state.gameStats?.perfectCleanups || 0) + (isPerfect ? 1 : 0),
+      },
     });
+
+    if (authUser?.id) {
+      dbFunctions.saveGameScore({
+        user_id: authUser.id,
+        game_type: 'ocean_cleanup',
+        score: finalScore,
+        level,
+        trash_collected: finalCollected,
+        perfect_cleanup: isPerfect,
+      }).catch((e) => console.error('[Ocean] Score save failed:', e));
+    }
 
     if (finalScore > 500) {
       setLevel(prev => prev + 1);
     }
-  }, [dispatch, state.gameStats]);
+  }, [dispatch, state.gameStats, authUser?.id, level]);
 
   // Timer tick
   useEffect(() => {
@@ -275,6 +339,53 @@ const OceanCleanupGame = () => {
   const formatTime = (seconds: number) => {
     return `0:${seconds.toString().padStart(2, '0')}`;
   };
+
+  if (loading) {
+  return (
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 animate-pulse">
+      {/* Title Skeleton */}
+      <div className="mb-6 text-center">
+        <div className="h-12 w-80 bg-white/10 rounded-xl mx-auto mb-4" />
+        <div className="h-6 w-96 bg-white/10 rounded-lg mx-auto" />
+      </div>
+
+      {/* Stats Cards Skeleton */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        {[...Array(5)].map((_, i) => (
+          <div
+            key={i}
+            className="bg-white/10 rounded-xl p-4 border border-white/10"
+          >
+            <div className="h-10 w-10 bg-white/10 rounded-lg mb-3" />
+            <div className="h-8 w-20 bg-white/10 rounded mb-2" />
+            <div className="h-4 w-16 bg-white/10 rounded" />
+          </div>
+        ))}
+      </div>
+
+      {/* Game Area Skeleton */}
+      <div className="bg-white/10 rounded-2xl h-[600px] mb-6" />
+
+      {/* How to Play Skeleton */}
+      <div className="bg-white/10 rounded-xl p-6">
+        <div className="h-8 w-48 bg-white/10 rounded mb-4" />
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <div className="h-4 bg-white/10 rounded" />
+            <div className="h-4 bg-white/10 rounded" />
+            <div className="h-4 bg-white/10 rounded" />
+          </div>
+
+          <div className="space-y-3">
+            <div className="h-4 bg-white/10 rounded" />
+            <div className="h-4 bg-white/10 rounded" />
+            <div className="h-4 bg-white/10 rounded" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
   return (
     <motion.div
@@ -328,9 +439,20 @@ const OceanCleanupGame = () => {
                 {gameStarted ? 'Game Complete!' : 'Ready to Clean the Ocean?'}
               </h2>
               {gameStarted && (
-                <div className="mb-6 p-6 bg-white/10 rounded-xl backdrop-blur-lg">
-                  <p className="text-xl text-white mb-2">Final Score: <span className="font-bold text-yellow-400">{score.toLocaleString()}</span></p>
-                  <p className="text-lg text-blue-100">Trash Collected: {totalCollected}</p>
+                <div className="mb-6 p-6 bg-white/10 rounded-xl backdrop-blur-lg space-y-3">
+                  {endStats.isNewHighScore && (
+                    <p className="text-lg font-bold text-yellow-300 animate-pulse">🏆 New High Score!</p>
+                  )}
+                  {endStats.isPerfect && (
+                    <p className="text-lg font-bold text-emerald-300">✨ Perfect Cleanup — zero fish hits!</p>
+                  )}
+                  <p className="text-xl text-white">Final Score: <span className="font-bold text-yellow-400">{score.toLocaleString()}</span></p>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <p className="text-blue-100">Trash Collected: <span className="font-semibold text-white">{totalCollected}</span></p>
+                    <p className="text-blue-100">Max Combo: <span className="font-semibold text-purple-300">x{endStats.maxCombo}</span></p>
+                    <p className="text-blue-100">Fish Hits: <span className={`font-semibold ${endStats.fishHits === 0 ? 'text-emerald-300' : 'text-red-300'}`}>{endStats.fishHits}</span></p>
+                    <p className="text-blue-100">Best Score: <span className="font-semibold text-yellow-300">{bestScoreRef.current.toLocaleString()}</span></p>
+                  </div>
                 </div>
               )}
               <motion.button

@@ -19,6 +19,8 @@ import {
   Droplets,
   Target,
 } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
+import UnderwaterBackground from '../components/UnderwaterBackground';
 
 // ─── Reusable animated section wrapper ───────────────────────
 const FadeInSection: React.FC<{
@@ -54,60 +56,6 @@ const FadeInSection: React.FC<{
     >
       {children}
     </motion.div>
-  );
-};
-
-// ─── Floating particle canvas background ─────────────────────
-const LandingBackground: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    const particles = Array.from({ length: 30 }, () => ({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      r: Math.random() * 3 + 1,
-      dx: (Math.random() - 0.5) * 0.4,
-      dy: -Math.random() * 0.5 - 0.2,
-      alpha: Math.random() * 0.5 + 0.1,
-    }));
-
-    let raf: number;
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach((p) => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(134, 239, 172, ${p.alpha})`;
-        ctx.fill();
-        p.x += p.dx;
-        p.y += p.dy;
-        if (p.y < -10) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
-        if (p.x < -10 || p.x > canvas.width + 10) p.dx *= -1;
-      });
-      raf = requestAnimationFrame(draw);
-    };
-    draw();
-
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 pointer-events-none z-0"
-    />
   );
 };
 
@@ -245,24 +193,25 @@ const LandingNav: React.FC<{ onNavigate: (path: string) => void }> = ({ onNaviga
       transition={{ duration: 0.6 }}
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
         scrolled
-          ? 'bg-gradient-to-r from-blue-900/95 to-green-800/95 backdrop-blur-lg border-b border-blue-700/40 shadow-lg'
+          ? 'bg-gradient-to-r from-blue-900/95 to-green-800/95 dark:from-slate-900/95 dark:to-slate-800/95 backdrop-blur-lg border-b border-blue-700/40 dark:border-slate-700/40 shadow-lg'
           : 'bg-transparent'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="text-xl font-extrabold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent"
+          className="text-xl font-extrabold bg-gradient-to-r from-green-400 to-blue-500 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent"
         >
           EcoPlay
         </button>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle className="shrink-0" />
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => onNavigate('/login')}
-            className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-white/10 hover:bg-white/20 transition-colors"
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-white dark:text-slate-100 bg-white/10 hover:bg-white/20 dark:hover:bg-white/20 transition-colors"
           >
             Sign In
           </motion.button>
@@ -270,7 +219,7 @@ const LandingNav: React.FC<{ onNavigate: (path: string) => void }> = ({ onNaviga
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => onNavigate('/login')}
-            className="px-4 py-2 rounded-lg text-sm font-bold bg-gradient-to-r from-green-500 to-blue-600 text-white hover:from-green-600 hover:to-blue-700 transition-all shadow-md"
+            className="px-4 py-2 rounded-lg text-sm font-bold bg-gradient-to-r from-green-500 to-blue-600 dark:from-emerald-500 dark:to-teal-600 text-white hover:from-green-600 hover:to-blue-700 dark:hover:from-emerald-600 dark:hover:to-teal-700 transition-all shadow-md"
           >
             Get Started Free
           </motion.button>
@@ -391,10 +340,10 @@ const LandingPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen relative overflow-x-hidden">
+    <div className="min-h-screen relative overflow-x-hidden bg-white dark:bg-slate-950 transition-colors duration-300">
       {/* Global background */}
-      <div className="fixed inset-0 z-0 bg-gradient-to-b from-blue-900 via-blue-800 to-green-900" />
-      <LandingBackground />
+      <div className="fixed inset-0 z-0 bg-gradient-to-b from-cyan-500 via-sky-700 to-blue-950 dark:from-sky-1000 dark:via-blue-950 dark:to-slate-950" />
+      <UnderwaterBackground />
 
       <LandingNav onNavigate={navigate} />
 
@@ -424,19 +373,19 @@ const LandingPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
         >
-          <div className="inline-flex items-center gap-2 bg-green-500/20 border border-green-400/30 text-green-300 text-sm font-semibold px-4 py-2 rounded-full mb-6">
+          <div className="inline-flex items-center gap-2 bg-green-500/20 dark:bg-emerald-500/20 border border-green-400/30 dark:border-emerald-400/30 text-green-300 dark:text-emerald-300 text-sm font-semibold px-4 py-2 rounded-full mb-6">
             <Globe className="h-4 w-4" />
             <span>Gamified Environmental Education</span>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-tight mb-6 max-w-4xl mx-auto">
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white dark:text-slate-50 leading-tight mb-6 max-w-4xl mx-auto">
             Save the Planet,{' '}
-            <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-green-400 to-blue-400 dark:from-emerald-300 dark:to-teal-300 bg-clip-text text-transparent">
               One Game at a Time
             </span>
           </h1>
 
-          <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-xl text-blue-100 dark:text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
             EcoPlay makes sustainability fun, measurable, and community-driven. Play games, earn points,
             build your eco village, and make a real difference — all in one platform.
           </p>
@@ -452,7 +401,7 @@ const LandingPage: React.FC = () => {
             whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(74, 222, 128, 0.4)' }}
             whileTap={{ scale: 0.97 }}
             onClick={goToLogin}
-            className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-8 rounded-xl text-lg shadow-xl transition-all"
+            className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 dark:from-emerald-500 dark:to-teal-600 hover:from-green-600 hover:to-emerald-700 dark:hover:from-emerald-600 dark:hover:to-teal-700 text-white font-bold py-4 px-8 rounded-xl text-lg shadow-xl transition-all"
           >
             <Zap className="h-5 w-5" />
             Start Playing Free
@@ -461,7 +410,7 @@ const LandingPage: React.FC = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.97 }}
             onClick={scrollToFeatures}
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/30 text-white font-bold py-4 px-8 rounded-xl text-lg transition-all"
+            className="flex items-center gap-2 bg-white/10 dark:bg-white/10 hover:bg-white/20 dark:hover:bg-white/20 backdrop-blur-sm border border-white/30 dark:border-white/30 text-white dark:text-slate-100 font-bold py-4 px-8 rounded-xl text-lg transition-all"
           >
             <Play className="h-5 w-5" />
             See How It Works
@@ -476,7 +425,7 @@ const LandingPage: React.FC = () => {
           className="flex flex-wrap justify-center gap-6 text-sm"
         >
           {['🌊 Ocean Cleanup Game', '🌳 Eco Village Builder', '🌍 SDG Challenges', '👥 Active Community'].map((item) => (
-            <span key={item} className="text-blue-200 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+            <span key={item} className="text-blue-200 dark:text-slate-300 bg-white/5 dark:bg-white/5 px-3 py-1.5 rounded-full border border-white/10 dark:border-white/10">
               {item}
             </span>
           ))}
@@ -487,7 +436,7 @@ const LandingPage: React.FC = () => {
           animate={{ y: [0, 8, 0] }}
           transition={{ repeat: Infinity, duration: 2 }}
           onClick={scrollToFeatures}
-          className="absolute bottom-10 text-white/50 hover:text-white/80 transition-colors"
+          className="absolute bottom-10 text-white/50 dark:text-white/50 hover:text-white/80 dark:hover:text-white/80 transition-colors"
         >
           <ChevronDown className="h-8 w-8" />
         </motion.button>
