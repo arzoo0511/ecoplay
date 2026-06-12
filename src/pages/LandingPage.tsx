@@ -20,6 +20,7 @@ import {
   Target,
 } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
+import UnderwaterBackground from '../components/UnderwaterBackground';
 
 // ─── Reusable animated section wrapper ───────────────────────
 const FadeInSection: React.FC<{
@@ -55,60 +56,6 @@ const FadeInSection: React.FC<{
     >
       {children}
     </motion.div>
-  );
-};
-
-// ─── Floating particle canvas background ─────────────────────
-const LandingBackground: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    const particles = Array.from({ length: 30 }, () => ({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      r: Math.random() * 3 + 1,
-      dx: (Math.random() - 0.5) * 0.4,
-      dy: -Math.random() * 0.5 - 0.2,
-      alpha: Math.random() * 0.5 + 0.1,
-    }));
-
-    let raf: number;
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach((p) => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(134, 239, 172, ${p.alpha})`;
-        ctx.fill();
-        p.x += p.dx;
-        p.y += p.dy;
-        if (p.y < -10) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
-        if (p.x < -10 || p.x > canvas.width + 10) p.dx *= -1;
-      });
-      raf = requestAnimationFrame(draw);
-    };
-    draw();
-
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 pointer-events-none z-0"
-    />
   );
 };
 
@@ -404,8 +351,8 @@ const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen relative overflow-x-hidden bg-white dark:bg-slate-950 transition-colors duration-300">
       {/* Global background */}
-      <div className="fixed inset-0 z-0 bg-gradient-to-b from-blue-900 via-blue-800 to-green-900 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950" />
-      <LandingBackground />
+      <div className="fixed inset-0 z-0 bg-gradient-to-b from-cyan-500 via-sky-700 to-blue-950 dark:from-sky-1000 dark:via-blue-950 dark:to-slate-950" />
+      <UnderwaterBackground />
 
       <LandingNav onNavigate={navigate} />
 

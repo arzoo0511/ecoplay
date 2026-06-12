@@ -35,3 +35,54 @@
     @apply transition-colors duration-300 ease-in-out;
   }
 }
+
+@keyframes bubble-rise {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-120vh);
+  }
+}
+
+@keyframes swim-left {
+  from {
+    transform: translateX(110vw);
+  }
+  to {
+    transform: translateX(-120px);
+  }
+}
+
+@keyframes swim-right {
+  from {
+    transform: translateX(-120px) scaleX(-1);
+  }
+  to {
+    transform: translateX(110vw) scaleX(-1);
+  }
+}
+
+@keyframes drift {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(20px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes light-ray {
+  0% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0.15;
+  }
+}

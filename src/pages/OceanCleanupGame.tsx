@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../context/GameContext';
-import { 
-  TbPlayerPlay, 
-  TbTrophy, 
-  TbTarget, 
-  TbClock, 
+import { useAuth } from '../context/AuthContext';
+import { dbFunctions } from '../lib/supabase';
+import {
+  TbPlayerPlay,
+  TbTrophy,
+  TbTarget,
+  TbClock,
   TbStar,
   TbTrash
 } from 'react-icons/tb';
@@ -46,6 +48,7 @@ useEffect(() => {
   return () => clearTimeout(timer);
 }, []);
   const { state, dispatch } = useGame();
+  const { user: authUser } = useAuth();
   const [gameActive, setGameActive] = useState(false);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30); // CHANGED: 30 seconds
@@ -68,9 +71,22 @@ useEffect(() => {
   const hasCommittedScoreRef = useRef(false);
   const scoreRef = useRef(score);
   const totalCollectedRef = useRef(totalCollected);
+  const fishHitsRef = useRef(0);
+  const maxComboRef = useRef(0);
+  const bestScoreRef = useRef(0);
+
+  const [endStats, setEndStats] = useState({
+    isPerfect: false,
+    isNewHighScore: false,
+    maxCombo: 0,
+    fishHits: 0,
+  });
 
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { totalCollectedRef.current = totalCollected; }, [totalCollected]);
+  useEffect(() => {
+    if (combo > maxComboRef.current) maxComboRef.current = combo;
+  }, [combo]);
 
 
   // Generate single trash item
@@ -125,8 +141,9 @@ useEffect(() => {
     setTimeLeft(30); // CHANGED: 30 seconds
     setCombo(0);
     setTotalCollected(0);
-    // Reset guard so the new round can award points at game end.
     hasCommittedScoreRef.current = false;
+    fishHitsRef.current = 0;
+    maxComboRef.current = 0;
     generateInitialTrash();
     generateFish();
   };
@@ -155,7 +172,8 @@ useEffect(() => {
 
   const handleFishCollision = useCallback(() => {
     if (!gameActive) return;
-    
+
+    fishHitsRef.current += 1;
     setScore(prev => Math.max(0, prev - 5));
     setCombo(0);
     
@@ -228,25 +246,62 @@ useEffect(() => {
 
     const finalScore = scoreRef.current;
     const finalCollected = totalCollectedRef.current;
+    const isPerfect = fishHitsRef.current === 0 && finalCollected > 0;
+    const hadHighCombo = maxComboRef.current >= 5;
+    const isNewBest = finalScore > bestScoreRef.current;
+    if (isNewBest) bestScoreRef.current = finalScore;
 
-    // Commit final round score to GameContext exactly once per round.
+    setEndStats({
+      isPerfect,
+      isNewHighScore: isNewBest,
+      maxCombo: maxComboRef.current,
+      fishHits: fishHitsRef.current,
+    });
+
+    const activityType = isPerfect
+      ? 'ocean_cleanup_perfect'
+      : hadHighCombo
+        ? 'ocean_cleanup_combo'
+        : 'ocean_cleanup_basic';
+
     if (finalScore > 0 && !hasCommittedScoreRef.current) {
       hasCommittedScoreRef.current = true;
-      dispatch({ type: 'ADD_POINTS', payload: finalScore });
+      dispatch({
+        type: 'ADD_POINTS',
+        payload: finalScore,
+        activityType,
+        metadata: {
+          score: finalScore,
+          trashCollected: finalCollected,
+          maxCombo: maxComboRef.current,
+          perfect: isPerfect,
+        },
+      });
     }
 
     dispatch({
       type: 'UPDATE_OCEAN_STATS',
       payload: {
         totalTrashCollected: (state.gameStats?.totalTrashCollected || 0) + finalCollected,
-        perfectCleanups: state.gameStats?.perfectCleanups || 0
-      }
+        perfectCleanups: (state.gameStats?.perfectCleanups || 0) + (isPerfect ? 1 : 0),
+      },
     });
+
+    if (authUser?.id) {
+      dbFunctions.saveGameScore({
+        user_id: authUser.id,
+        game_type: 'ocean_cleanup',
+        score: finalScore,
+        level,
+        trash_collected: finalCollected,
+        perfect_cleanup: isPerfect,
+      }).catch((e) => console.error('[Ocean] Score save failed:', e));
+    }
 
     if (finalScore > 500) {
       setLevel(prev => prev + 1);
     }
-  }, [dispatch, state.gameStats]);
+  }, [dispatch, state.gameStats, authUser?.id, level]);
 
   // Timer tick
   useEffect(() => {
@@ -384,9 +439,20 @@ useEffect(() => {
                 {gameStarted ? 'Game Complete!' : 'Ready to Clean the Ocean?'}
               </h2>
               {gameStarted && (
-                <div className="mb-6 p-6 bg-white/10 rounded-xl backdrop-blur-lg">
-                  <p className="text-xl text-white mb-2">Final Score: <span className="font-bold text-yellow-400">{score.toLocaleString()}</span></p>
-                  <p className="text-lg text-blue-100">Trash Collected: {totalCollected}</p>
+                <div className="mb-6 p-6 bg-white/10 rounded-xl backdrop-blur-lg space-y-3">
+                  {endStats.isNewHighScore && (
+                    <p className="text-lg font-bold text-yellow-300 animate-pulse">🏆 New High Score!</p>
+                  )}
+                  {endStats.isPerfect && (
+                    <p className="text-lg font-bold text-emerald-300">✨ Perfect Cleanup — zero fish hits!</p>
+                  )}
+                  <p className="text-xl text-white">Final Score: <span className="font-bold text-yellow-400">{score.toLocaleString()}</span></p>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <p className="text-blue-100">Trash Collected: <span className="font-semibold text-white">{totalCollected}</span></p>
+                    <p className="text-blue-100">Max Combo: <span className="font-semibold text-purple-300">x{endStats.maxCombo}</span></p>
+                    <p className="text-blue-100">Fish Hits: <span className={`font-semibold ${endStats.fishHits === 0 ? 'text-emerald-300' : 'text-red-300'}`}>{endStats.fishHits}</span></p>
+                    <p className="text-blue-100">Best Score: <span className="font-semibold text-yellow-300">{bestScoreRef.current.toLocaleString()}</span></p>
+                  </div>
                 </div>
               )}
               <motion.button

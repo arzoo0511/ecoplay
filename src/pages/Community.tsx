@@ -16,25 +16,15 @@ import {
   secondaryButton,
   softCard,
 } from '../lib/ui';
-import { useAuth } from '../context/AuthContext';
 import { dbFunctions, CommunityPost } from '../lib/supabase';
 
 const Community = () => {
-  const [loading, setLoading] = useState(true);
-
-React.useEffect(() => {
-  const timer = setTimeout(() => {
-    setLoading(false);
-  }, 1500);
-
-  return () => clearTimeout(timer);
-}, []);
-  const { isGuest } = useAuth();
+  const { user, isGuest } = useAuth();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewPost, setShowNewPost] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState({
     title: '',
     content: '',
@@ -47,6 +37,13 @@ React.useEffect(() => {
   
   // Track which posts the user has liked in this session
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const categories = [
     { id: 'all', name: 'All Posts' },

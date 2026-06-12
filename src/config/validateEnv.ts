@@ -1,17 +1,23 @@
-export function validateEnv(): { valid: boolean; missing: string[] } {
+export function validateEnv(): {
+  valid: boolean;
+  missing: string[];
+} {
   const missing: string[] = [];
 
-  if (
-    !import.meta.env.VITE_SUPABASE_URL ||
-    import.meta.env.VITE_SUPABASE_URL === "https://your-project.supabase.co"
-  ) {
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+  const isPlaceholderValue = (value?: string) =>
+    !value ||
+    value.includes("your-project") ||
+    value.includes("your-anon-key") ||
+    value.includes("placeholder");
+
+  if (isPlaceholderValue(url)) {
     missing.push("VITE_SUPABASE_URL");
   }
 
-  if (
-    !import.meta.env.VITE_SUPABASE_ANON_KEY ||
-    import.meta.env.VITE_SUPABASE_ANON_KEY === "your-anon-key"
-  ) {
+  if (isPlaceholderValue(anonKey)) {
     missing.push("VITE_SUPABASE_ANON_KEY");
   }
 
