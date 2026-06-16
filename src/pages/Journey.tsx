@@ -146,10 +146,10 @@ export default function Journey() {
                   <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-gray-900/80 p-4 rounded border border-gray-700 shadow">
                     <div className="flex items-center justify-between space-x-2 mb-1">
                       <div className="font-bold text-white">{activity.activity_type.replace(/_/g, ' ')}</div>
-                      <time className="font-caveat font-medium text-emerald-500">{new Date(activity.awarded_at || activity.timestamp).toLocaleDateString()}</time>
+                      <time className="font-caveat font-medium text-emerald-500">{new Date(activity.timestamp).toLocaleDateString()}</time>
                     </div>
                     <div className="text-slate-400 text-sm">
-                      Earned {activity.final_xp || activity.xp_awarded} XP
+                      Earned {activity.xp_awarded} XP
                     </div>
                   </div>
                 </div>

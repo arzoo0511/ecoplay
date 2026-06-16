@@ -17,7 +17,7 @@ ON CONFLICT (key) DO NOTHING;
 CREATE TABLE IF NOT EXISTS user_journeys (
   user_id                UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   predicted_score        INT         NOT NULL DEFAULT 0,
-  consistency_trend      TEXT        NOT NULL DEFAULT 'Neutral', -- 'Improving', 'Declining', 'Stable'
+  consistency_trend      TEXT        NOT NULL DEFAULT 'Stable', -- 'Improving', 'Declining', 'Stable'
   streak_loss_probability NUMERIC(4,2) NOT NULL DEFAULT 0.0,
   weekly_goals           JSONB       NOT NULL DEFAULT '[]'::jsonb, -- Array of personalized goals
   created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -70,9 +70,9 @@ BEGIN
   SELECT 
     x.id,
     x.activity_type,
-    x.final_xp,
+    x.final_xp AS xp_awarded,
     x.metadata,
-    x.awarded_at
+    x.awarded_at AS timestamp
   FROM xp_ledger x
   WHERE x.user_id = p_user_id
   ORDER BY x.awarded_at DESC

@@ -192,18 +192,27 @@ const LandingNav: React.FC<{ onNavigate: (path: string) => void }> = ({ onNaviga
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6 }}
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+        
         scrolled
-          ? 'bg-gradient-to-r from-blue-900/95 to-green-800/95 dark:from-slate-900/95 dark:to-slate-800/95 backdrop-blur-lg border-b border-blue-700/40 dark:border-slate-700/40 shadow-lg'
-          : 'bg-transparent'
+                 
+        ? 'bg-white/10 backdrop-blur-xl border-b border-white/20 shadow-lg'
+        : 'bg-transparent'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        
         <button
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="text-xl font-extrabold bg-gradient-to-r from-green-400 to-blue-500 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent"
-        >
-          EcoPlay
-        </button>
+
+  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+  className="flex items-center"
+>
+  <img
+    src="/logo.png"
+    alt="EcoPlay Logo"
+    className="h-12 md:h-14 w-auto object-contain"
+  />
+</button>
+
 
         <div className="flex items-center gap-3">
           <ThemeToggle className="shrink-0" />

@@ -36,7 +36,13 @@ export async function getOrGenerateJourney(userId: string): Promise<JourneyStats
       supabase.from('user_streaks').select('*').eq('user_id', userId).single()
     ]);
 
-    // Handle missing data by using defaults
+    if (statsRes.error && statsRes.error.code !== 'PGRST116') {
+      console.warn('[Journey] Failed to fetch user stats:', statsRes.error.message);
+    }
+    if (streakRes.error && streakRes.error.code !== 'PGRST116') {
+      console.warn('[Journey] Failed to fetch user streaks:', streakRes.error.message);
+    }
+
     const currentStreak = streakRes.data?.current_streak || 0;
     const currentLevel = statsRes.data?.current_level || 1;
     const activitiesCount = statsRes.data?.activities_count || 0;
@@ -83,8 +89,7 @@ export async function getOrGenerateJourney(userId: string): Promise<JourneyStats
       weeklyGoals.push({ id: 'g4', title: 'Community Leader', description: 'Answer a question in the community', xpReward: 50, completed: false });
     }
 
-    // Upsert the generated journey to the database
-    await supabase.from('user_journeys').upsert({
+    const { error: upsertError } = await supabase.from('user_journeys').upsert({
       user_id: userId,
       predicted_score: predictedScore,
       consistency_trend: consistencyTrend,
@@ -92,6 +97,9 @@ export async function getOrGenerateJourney(userId: string): Promise<JourneyStats
       weekly_goals: weeklyGoals,
       updated_at: new Date().toISOString()
     });
+    if (upsertError) {
+      console.warn('[Journey] Failed to persist journey:', upsertError.message);
+    }
 
     return {
       predictedScore,
@@ -121,8 +129,12 @@ export async function fetchUserTimeline(userId: string) {
       .rpc('get_user_timeline', { p_user_id: userId, p_limit: 20 });
     
     if (error) {
-      // Fallback if RPC doesn't exist (e.g. migrations not run)
-      const fallback = await supabase.from('xp_ledger').select('*').eq('user_id', userId).order('awarded_at', { ascending: false }).limit(20);
+      const fallback = await supabase
+        .from('xp_ledger')
+        .select('id, activity_type, xp_awarded:final_xp, metadata, timestamp:awarded_at')
+        .eq('user_id', userId)
+        .order('awarded_at', { ascending: false })
+        .limit(20);
       return fallback.data || [];
     }
     return data || [];

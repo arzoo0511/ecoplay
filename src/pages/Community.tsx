@@ -153,6 +153,13 @@ const Community = () => {
   // Track which posts the user has liked in this session
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const categories = [
     { id: 'all', name: 'All Posts' },
     { id: 'question', name: 'Questions' },

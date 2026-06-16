@@ -1045,31 +1045,42 @@ export const dbFunctions = {
       if (partError) throw partError;
       if (!participations || participations.length === 0) return [];
 
+      const eventIds = [...new Set(participations.map((p) => p.event_id))];
+
+      const [eventsRes, allParticipationsRes] = await Promise.all([
+        supabase.from('community_events').select('*').in('id', eventIds),
+        supabase
+          .from('event_participation')
+          .select('event_id, user_id, contribution')
+          .in('event_id', eventIds),
+      ]);
+
+      if (eventsRes.error) throw eventsRes.error;
+      if (allParticipationsRes.error) throw allParticipationsRes.error;
+
+      const eventMap = new Map<string, (typeof eventsRes.data)[number]>();
+      for (const event of eventsRes.data ?? []) {
+        eventMap.set(event.id, event);
+      }
+
+      const participationsByEvent = new Map<string, { contribution: number; count: number }>();
+      for (const p of allParticipationsRes.data ?? []) {
+        const existing = participationsByEvent.get(p.event_id) ?? { contribution: 0, count: 0 };
+        existing.contribution += p.contribution || 0;
+        existing.count += 1;
+        participationsByEvent.set(p.event_id, existing);
+      }
+
+      const now = new Date();
       const history: EventHistoryRecord[] = [];
 
       for (const part of participations) {
-        const { data: event, error: eventErr } = await supabase
-          .from('community_events')
-          .select('*')
-          .eq('id', part.event_id)
-          .single();
+        const event = eventMap.get(part.event_id);
+        if (!event) continue;
 
-        if (eventErr || !event) continue;
+        const communityStats = participationsByEvent.get(part.event_id) ?? { contribution: 0, count: 0 };
+        const communityTotal = communityStats.contribution;
 
-        // Compute community total
-        const { data: allPart, error: allPartErr } = await supabase
-          .from('event_participation')
-          .select('contribution, user_id')
-          .eq('event_id', part.event_id);
-
-        if (allPartErr) continue;
-
-        let communityTotal = 0;
-        allPart.forEach((p) => {
-          communityTotal += p.contribution || 0;
-        });
-
-        // Parse milestones
         let milestones: Milestone[] = [];
         if (typeof event.milestones === 'string') {
           try {
@@ -1081,10 +1092,7 @@ export const dbFunctions = {
           milestones = event.milestones;
         }
 
-        const unlockedMilestones = milestones.filter((m) => communityTotal >= m.at);
-        const now = new Date();
         const endDate = new Date(event.end_date);
-        const status = now > endDate ? 'ended' : 'active';
 
         history.push({
           id: part.id,
@@ -1092,16 +1100,16 @@ export const dbFunctions = {
           eventTitle: event.title,
           eventIcon: event.icon,
           eventTheme: event.theme,
-          status,
+          status: now > endDate ? 'ended' : 'active',
           userContribution: part.contribution || 0,
           communityProgress: communityTotal,
           goal: event.goal,
           unit: event.unit,
-          participantCount: allPart.length,
+          participantCount: communityStats.count,
           joinedAt: part.joined_at,
           completedAt: part.completed_at,
           rewardsClaimed: part.rewards_claimed || [],
-          unlockedMilestones,
+          unlockedMilestones: milestones.filter((m) => communityTotal >= m.at),
           xpReward: event.xp_reward || 500,
           badgeId: event.badge_id,
           goalReached: communityTotal >= event.goal,
@@ -1110,7 +1118,6 @@ export const dbFunctions = {
         });
       }
 
-      // Sort: most recent first
       history.sort((a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime());
 
       return history;

@@ -31,5 +31,17 @@ export function resolveChallenge(local: unknown, remote: unknown): unknown {
     return { ...remoteChallenge, ...localChallenge, completed: true };
   }
 
-  return remoteChallenge;
+  const localProgress = typeof localChallenge.progress === 'number' ? localChallenge.progress : 0;
+  const remoteProgress = typeof remoteChallenge.progress === 'number' ? remoteChallenge.progress : 0;
+
+  if (localProgress !== remoteProgress) {
+    const winner = localProgress > remoteProgress ? localChallenge : remoteChallenge;
+    return { ...remoteChallenge, ...winner, progress: Math.max(localProgress, remoteProgress) };
+  }
+
+  const localTime = typeof localChallenge.updatedAt === 'number' ? localChallenge.updatedAt : 0;
+  const remoteTime = typeof remoteChallenge.updatedAt === 'number' ? remoteChallenge.updatedAt : 0;
+  return localTime > remoteTime
+    ? { ...remoteChallenge, ...localChallenge }
+    : { ...localChallenge, ...remoteChallenge };
 }
