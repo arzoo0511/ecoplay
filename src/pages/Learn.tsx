@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
+  CheckCircle2,
   Clock,
   LayoutGrid,
   Search,
   Star,
   X,
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { useGame } from '../context/GameContext';
 import { learningContent, LearningContent } from '../data/learningContent';
 
@@ -66,12 +68,17 @@ const getTypeLabel = (type: LearningContent['type']) => {
 
 const ResourceCard: React.FC<{
   content: LearningContent;
-  onOpen: (url: string) => void;
-}> = ({ content, onOpen }) => {
+  isCompleted: boolean;
+  onOpen: (id: string, url: string) => void;
+}> = ({ content, isCompleted, onOpen }) => {
   const points = content.points ?? 0;
 
   return (
-    <motion.div whileHover={{ y: -4, scale: 1.01 }} className="overflow-hidden rounded-2xl border border-eco-border bg-eco-panel">
+    <motion.div whileHover={{ y: -4, scale: 1.01 }} className="relative overflow-hidden rounded-2xl border border-eco-border bg-eco-panel">
+      {isCompleted && (
+        <div className="absolute inset-0 z-10 pointer-events-none rounded-2xl ring-2 ring-emerald-500/40" />
+      )}
+
       <div className="relative">
         <img
           src={content.thumbnail}
@@ -85,9 +92,15 @@ const ResourceCard: React.FC<{
         <div className="absolute left-2 top-2 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
           {getTypeLabel(content.type)}
         </div>
-        <div className="absolute right-2 top-2 rounded-full bg-eco-accent/90 px-2.5 py-1 text-xs font-bold text-white">
-          <Star className="inline h-3 w-3 mr-0.5" /> {points} pts
-        </div>
+        {isCompleted ? (
+          <div className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-emerald-600/90 px-2.5 py-1 text-xs font-bold text-white">
+            <CheckCircle2 className="h-3 w-3" /> Done
+          </div>
+        ) : (
+          <div className="absolute right-2 top-2 rounded-full bg-eco-accent/90 px-2.5 py-1 text-xs font-bold text-white">
+            <Star className="inline h-3 w-3 mr-0.5" /> {points} pts
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-2 rounded-b-2xl border-t border-eco-border p-4">
@@ -121,30 +134,70 @@ const ResourceCard: React.FC<{
 
         <button
           type="button"
-          onClick={() => onOpen(content.url)}
-          className="mt-auto w-full rounded-xl bg-eco-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-eco-accentAlt"
+          onClick={() => onOpen(content.id, content.url)}
+          className={`mt-auto w-full rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+            isCompleted
+              ? 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30'
+              : 'bg-eco-accent text-white hover:bg-eco-accentAlt'
+          }`}
         >
-          Start Learning →
+          {isCompleted ? '✓ Review Again' : 'Start Learning →'}
         </button>
       </div>
     </motion.div>
   );
 };
 
+const STORAGE_KEY_PREFIX = 'ecoplay_learn_completed';
+
+/** Builds a localStorage key scoped to the current user. */
+function storageKey(userId: string): string {
+  return `${STORAGE_KEY_PREFIX}_${userId}`;
+}
+
+/** Loads the set of completed resource IDs from localStorage. */
+function loadCompletedIds(userId: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(storageKey(userId));
+    if (!raw) return new Set();
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) return new Set(parsed.filter((v): v is string => typeof v === 'string'));
+    return new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+/** Persists completed resource IDs to localStorage. */
+function saveCompletedIds(userId: string, ids: Set<string>): void {
+  try {
+    localStorage.setItem(storageKey(userId), JSON.stringify([...ids]));
+  } catch {
+    // Storage full or unavailable — silently degrade
+  }
+}
+
 const Learn = () => {
+  const { user } = useAuth();
   const { dispatch } = useGame();
   const [selectedCategory, setSelectedCategory] = useState<CategoryKey>('all');
   const [selectedType, setSelectedType] = useState<ResourceType>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-useEffect(() => {
-  const timer = setTimeout(() => {
-    setLoading(false);
-  }, 1500);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
-  return () => clearTimeout(timer);
-}, []);
+  useEffect(() => {
+    if (!user?.id) return;
+    setCompletedIds(loadCompletedIds(user.id));
+  }, [user?.id]);
 
   const filteredContent = learningContent.filter((content) => {
     const matchesCategory = selectedCategory === 'all' || content.category === selectedCategory;
@@ -155,6 +208,8 @@ useEffect(() => {
 
     return matchesCategory && matchesType && matchesSearch;
   });
+
+  const completedCount = learningContent.filter((c) => completedIds.has(c.id)).length;
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -171,14 +226,45 @@ useEffect(() => {
     }, 100);
   };
 
-  const openResource = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
+  /** Shows a transient toast message for 3 seconds. */
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  }, []);
 
-  void dispatch;
-if (loading) {
-  return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8 space-y-8 animate-pulse">
+  const openResource = useCallback((id: string, url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+
+    if (completedIds.has(id)) {
+      showToast('Already completed — no extra points awarded');
+      return;
+    }
+
+    const next = new Set(completedIds);
+    next.add(id);
+    setCompletedIds(next);
+
+    if (user?.id) {
+      saveCompletedIds(user.id, next);
+    }
+
+    const resource = learningContent.find((c) => c.id === id);
+    const points = resource?.points ?? 0;
+
+    if (points > 0) {
+      dispatch({
+        type: 'ADD_POINTS',
+        payload: points,
+        activityType: 'learn_video',
+        metadata: { resourceId: id, resourceTitle: resource?.title },
+      });
+      showToast(`+${points} XP earned!`);
+    }
+  }, [completedIds, user?.id, dispatch, showToast]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen p-4 sm:p-6 lg:p-8 space-y-8 animate-pulse">
 
       {/* Hero Section */}
       <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8">
@@ -262,6 +348,20 @@ if (loading) {
 }
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen p-4 sm:p-6 lg:p-8">
+      {/* Toast notification */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed left-1/2 top-24 z-50 -translate-x-1/2 rounded-xl border border-emerald-500/30 bg-emerald-900/90 px-5 py-3 text-sm font-medium text-emerald-200 shadow-lg backdrop-blur-sm"
+          >
+            {toastMessage}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="mb-8 overflow-hidden rounded-3xl border border-eco-border bg-eco-surface bg-gradient-to-br from-eco-accent/10 to-transparent px-6 py-8 sm:px-8 lg:px-10">
         <h1 className="text-4xl font-bold text-eco-text">Explore & Learn</h1>
         <p className="mt-3 text-lg text-eco-muted">Discover sustainability topics at your own pace</p>
@@ -269,11 +369,15 @@ if (loading) {
         <div className="mt-6 flex flex-wrap gap-3">
           <div className="inline-flex items-center gap-2 rounded-full border border-eco-border bg-eco-panel px-4 py-1.5 text-sm text-eco-muted">
             <BookOpen className="h-3.5 w-3.5 text-eco-accent" />
-            <span>15 Resources</span>
+            <span>{learningContent.length} Resources</span>
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-eco-border bg-eco-panel px-4 py-1.5 text-sm text-eco-muted">
             <LayoutGrid className="h-3.5 w-3.5 text-eco-accent" />
             <span>6 Categories</span>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-eco-border bg-eco-panel px-4 py-1.5 text-sm text-eco-muted">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+            <span>{completedCount} / {learningContent.length} Completed</span>
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-eco-border bg-eco-panel px-4 py-1.5 text-sm text-eco-muted">
             <Star className="h-3.5 w-3.5 text-eco-accent" />
@@ -395,7 +499,12 @@ if (loading) {
               className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
             >
               {filteredContent.map((content) => (
-                <ResourceCard key={content.id} content={content} onOpen={openResource} />
+                <ResourceCard
+                  key={content.id}
+                  content={content}
+                  isCompleted={completedIds.has(content.id)}
+                  onOpen={openResource}
+                />
               ))}
             </motion.div>
           )}

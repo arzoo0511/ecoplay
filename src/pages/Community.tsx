@@ -521,7 +521,7 @@ const Community = () => {
         setReplies((prev) => ({
           ...prev,
           [postId]: [...(prev[postId] || []), addedReply],
-        }));
+        }));pls apply bot's code suggestions
 
         setPosts((prev) =>
           prev.map((post) =>
