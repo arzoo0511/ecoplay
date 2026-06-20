@@ -412,23 +412,42 @@ const Events = () => {
                   </div>
                 ))}
               </div>
-            ) : filteredCommunityEvents.length === 0 ? (
+           ) : filteredCommunityEvents.length === 0 ? (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`${glassCard} p-12 text-center`}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={`${glassCard} flex flex-col items-center justify-center text-center p-10 max-w-md mx-auto my-8 space-y-4`}
               >
-                <Sparkles className="mx-auto h-16 w-16 text-emerald-400/50 mb-4" />
-                <h3 className="text-xl font-bold text-sky-950 dark:text-white mb-2">
-                  {communityFilter === 'all'
-                    ? 'No Community Events Yet'
-                    : `No ${communityFilter} events`}
-                </h3>
-                <p className="text-sky-950/60 dark:text-slate-400 max-w-md mx-auto">
-                  {communityFilter === 'all'
-                    ? 'Community events are coming soon! Stay tuned for exciting global sustainability missions.'
-                    : 'Try selecting a different filter to see more events.'}
-                </p>
+                {/* Glowing Sparkles Icon Wrapper */}
+                <div className="p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 dark:from-emerald-500/20 dark:to-teal-500/20 rounded-full text-emerald-500 dark:text-emerald-400 border border-emerald-500/20 shadow-inner">
+                  <Sparkles className="h-8 w-8 animate-pulse" />
+                </div>
+                
+                {/* Content Hierarchy */}
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-sky-950 dark:text-white">
+                    {communityFilter === 'all'
+                      ? 'No Active Missions'
+                      : `No ${communityFilter} Events Found`}
+                  </h3>
+                  <p className="text-sm text-sky-950/70 dark:text-slate-400 max-w-xs mx-auto">
+                    {communityFilter === 'all'
+                      ? 'The community workspace is currently clear. Check back shortly to sign up for brand new collaborative global sustainability actions!'
+                      : 'We couldn’t find any matches. Try altering your filter settings above to browse alternative green initiatives.'}
+                  </p>
+                </div>
+
+                {/* Reset or Interaction CTA */}
+                {communityFilter !== 'all' && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setCommunityFilter('all')} // Directly clears the filter to help the user
+                    className={`${primaryButton} text-sm px-4 py-2 mt-2 shadow-lg shadow-emerald-500/10`}
+                  >
+                    🔄 View All Events
+                  </motion.button>
+                )}
               </motion.div>
             ) : (
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
