@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Leaf, Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from '../components/ThemeToggle';
+import AnimatedBackground from '../components/AnimatedBackground';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -264,16 +265,18 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
-      <div 
-        className="absolute top-4 right-4 animate-fade-in"
-      >
-        <ThemeToggle />
-      </div>
+    <div className="min-h-screen w-full overflow-x-hidden relative flex items-center justify-center p-4 bg-white dark:bg-[#0B1528] transition-colors duration-300">
+    <div className="absolute inset-0 z-0 overflow-hidden">
+      <AnimatedBackground />
+      <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/60 via-teal-100/40 to-cyan-200/60 dark:from-[#0B1528]/80 dark:via-[#07241A]/50 dark:to-[#0B1528]/80" />
+    </div>
+    <div className="absolute top-4 right-4 z-20 animate-fade-in">
+      <ThemeToggle />
+    </div>
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-gray-200 dark:border-slate-700 shadow-2xl p-8 w-full max-w-md"
+        className="relative z-10 bg-white dark:bg-slate-900 rounded-2xl border-2 border-gray-200 dark:border-slate-700 shadow-2xl p-8 w-full max-w-md"
       >
         {/* Header */}
         <div className="text-center mb-8">
