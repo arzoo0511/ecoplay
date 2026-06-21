@@ -278,9 +278,9 @@ const Dashboard = () => {
 
   const [timeLeft, setTimeLeft] = useState('');
 
-  const currentStreak = streakState?.streak_count ?? 0;
-  const availableFreezes =
-    streakState?.streak_freeze_count ?? 0;
+const currentStreak = (state as any).streak?.streak_count ?? 0;
+const availableFreezes = (state as any).streak?.streak_freeze_count ?? 0;
+const notifications = (user as any)?.notifications ?? [];
 
   const freezeRing = `${Math.max(
     0,
