@@ -58,15 +58,16 @@ const AnimatedBackground = () => {
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
       if (isDark) {
-        gradient.addColorStop(0, 'rgba(2, 6, 23, 0.95)');
-        gradient.addColorStop(0.5, 'rgba(15, 23, 42, 0.78)');
-        gradient.addColorStop(1, 'rgba(17, 24, 39, 0.92)');
+        gradient.addColorStop(0, 'rgba(11, 21, 40, 0.98)');   // Deep slate
+        gradient.addColorStop(0.5, 'rgba(7, 36, 26, 0.90)');  // Emerald glow
+        gradient.addColorStop(1, 'rgba(11, 21, 40, 0.98)');   // Deep slate
       } else {
-        gradient.addColorStop(0, 'rgba(232, 245, 255, 0.92)');
-        gradient.addColorStop(0.45, 'rgba(191, 219, 254, 0.55)');
-        gradient.addColorStop(1, 'rgba(167, 243, 208, 0.45)');
+        // Soft eco-mint colors for light mode
+        gradient.addColorStop(0, 'rgba(240, 253, 250, 0.95)');   
+        gradient.addColorStop(0.5, 'rgba(204, 251, 241, 0.80)');  
+        gradient.addColorStop(1, 'rgba(167, 243, 208, 0.60)');   
       }
 
       ctx.fillStyle = gradient;
@@ -149,8 +150,7 @@ const AnimatedBackground = () => {
 
   return (
     <div className="fixed inset-0 z-0 transition-theme duration-300">
-      <div className="absolute inset-0 bg-gradient-to-b from-sky-100 via-blue-300 to-blue-500 opacity-90 transition-theme duration-300 dark:from-slate-950 dark:via-slate-900 dark:to-gray-900" />
-
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0B1528] via-[#07241A] to-[#0B1528] transition-colors duration-500" />
       <canvas
         ref={canvasRef}
         className="absolute inset-0 opacity-80"

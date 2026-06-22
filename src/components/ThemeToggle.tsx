@@ -12,9 +12,6 @@ const ThemeToggle: React.FC<{ className?: string }> = ({ className = '' }) => {
       className={`relative inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors ${className}`}
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
-
-      console.log(import.meta.env)
-      console.log("working")
       
       {isDark ? (
         <svg className="w-5 h-5 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
