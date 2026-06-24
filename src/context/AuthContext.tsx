@@ -128,62 +128,101 @@ export const AuthProvider: React.FC<{
   const [isGuest, setIsGuest] = useState<boolean>(isGuestMode());
   const [showMergePrompt, setShowMergePrompt] = useState(false);
 
-  useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setUser(isGuestMode() ? guestUser : null);
-      setSupabaseError(authSetupMessage);
-      setLoading(false);
-      return;
-    }
+useEffect(() => {
+  const ensureUserProfileExists = async (supabaseUser: any) => {
+    try {
+      const { data: profile, error: profileErr } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", supabaseUser.id)
+        .maybeSingle();
 
-    console.log("[AuthDebug] Initializing AuthProvider...");
-    supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => {
+      if (!profileErr && !profile) {
+        console.log("[EcoPlay] Public profile missing. Creating on-the-fly...");
+
+        await supabase.from("users").insert([
+          {
+            id: supabaseUser.id,
+            email: supabaseUser.email || "",
+            name:
+              supabaseUser.user_metadata?.name ||
+              supabaseUser.email?.split("@")[0] ||
+              "EcoPlayer",
+            points: 0,
+            level: 1,
+            eco_score: 0,
+            avatar_url: supabaseUser.user_metadata?.avatar_url || null,
+          },
+        ]);
+      }
+
+      const { data: village, error: villageErr } = await supabase
+        .from("eco_villages")
+        .select("id")
+        .eq("user_id", supabaseUser.id)
+        .maybeSingle();
+
+      if (!villageErr && !village) {
         console.log(
-          "[AuthDebug] getSession returned session:",
-          session ? "FOUND" : "NULL",
+          "[EcoPlay] Eco village record missing. Initializing on-the-fly..."
         );
-        if (session?.user) {
-          console.log("[AuthDebug] User found in session:", session.user.email);
-          ensureUserProfile(session.user);
-        }
-        setUser(
-          session?.user
-            ? toAppUser(session.user)
-            : isGuestMode()
-              ? guestUser
-              : null,
-        );
-        setUser(isGuestMode() ? guestUser : null);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("[AuthDebug] getSession error:", err);
-      });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log(
-        "[AuthDebug] onAuthStateChange event:",
-        event,
-        "session:",
-        session ? "FOUND" : "NULL",
-      );
+        await supabase.from("eco_villages").insert([
+          {
+            user_id: supabaseUser.id,
+            air_quality: 20,
+            water_quality: 20,
+            biodiversity: 10,
+            trees: 0,
+            solar_panels: 0,
+            water_filters: 0,
+            pollution_level: 80,
+          },
+        ]);
+      }
+    } catch (err) {
+      console.error("[EcoPlay] Error self-healing profile:", err);
+    }
+  };
+
+  supabase.auth
+    .getSession()
+    .then(({ data: { session } }) => {
       if (session?.user) {
         ensureUserProfile(session.user);
         setUser(toAppUser(session.user));
+        ensureUserProfileExists(session.user);
       } else {
         setUser(isGuestMode() ? guestUser : null);
       }
+
+      setLoading(false);
+    })
+    .catch(() => {
+      setSupabaseError(
+        "Unable to connect to Supabase. Some features may be unavailable."
+      );
+
       setLoading(false);
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((_event, session) => {
+    if (session?.user) {
+      setUser(toAppUser(session.user));
+      ensureUserProfileExists(session.user);
+    } else {
+      setUser(isGuestMode() ? guestUser : null);
+    }
+
+    setLoading(false);
+  });
+
+  return () => {
+    subscription.unsubscribe();
+  };
+}, []);
 
   const register = async (
     name: string,
