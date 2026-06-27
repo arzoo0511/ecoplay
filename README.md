@@ -1,5 +1,5 @@
 # EcoPlay 🌍
-star repo before contributing !! 
+Star repo before contributing !! 
 > A gamified environmental education platform that makes sustainability fun, measurable, and community-driven.
 
 [![React](https://img.shields.io/badge/React-18+-61DAFB?style=flat&logo=react&logoColor=black)](https://reactjs.org/)
