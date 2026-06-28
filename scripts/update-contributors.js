@@ -39,4 +39,7 @@ _Last Updated: ${new Date().toLocaleDateString()}_
   console.log("README updated successfully!");
 }
 
-updateContributors().catch(console.error);
+updateContributors().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
