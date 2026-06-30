@@ -43,3 +43,36 @@ jobs:
 
       - name: Run Build
         run: npm run build
+
+  ui-quality:
+    name: UI Quality Assurance (a11y & Visuals)
+    runs-on: ubuntu-latest
+    # Using Playwright's official docker container to normalize font/pixel rendering
+    container:
+      image: mcr.microsoft.com/playwright:v1.44.0-jammy
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run E2E & Visual Regression Tests
+        run: npx playwright test
+        env:
+          CI: true
+
+      - name: Upload HTML Test Report on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 5
