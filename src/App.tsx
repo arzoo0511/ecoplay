@@ -9,7 +9,7 @@ import Layout from './components/Layout';
 import useSyncStatus from './hooks/useSyncStatus';
 import MergePrompt from './components/status/MergePrompt';
 import OfflineBanner from './components/status/OfflineBanner';
-
+import Navbar from './components/Navbar';
 import Auth from './pages/Auth';
 
 const Bingo = React.lazy(() => import('./pages/Bingo'));
@@ -21,7 +21,7 @@ const LandingPage = React.lazy(() => import('./pages/LandingPage'));
 const Learn = React.lazy(() => import('./pages/Learn'));
 const OceanCleanupGame = React.lazy(() => import('./pages/OceanCleanupGame'));
 const Journey = React.lazy(() => import('./pages/Journey'));
-
+const QuizGame = React.lazy(() => import('./pages/Quizgame').then(m => ({ default: m.QuizGame })));
 /**
  * Protects routes that require authentication.
  * Shows a loading indicator while the Supabase session is being restored
@@ -70,6 +70,7 @@ const AppRoutes = () => {
               <Route path="/bingo" element={<Protected><Bingo /></Protected>} />
               <Route path="/community" element={<Protected><Community /></Protected>} />
               <Route path="/events" element={<Protected><Events /></Protected>} />
+              <Route path="/quiz" element={<><Navbar /><QuizGame /></>} />
 
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
