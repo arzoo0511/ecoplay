@@ -17,7 +17,8 @@ export type ActivityType =
   | 'community_solution'
   | 'learn_video'
   | 'event_participation'
-  | 'login_bonus';
+  | 'login_bonus'
+  | 'quiz_completed';
 
 export interface XPAwardResult {
   finalXP: number;
@@ -167,16 +168,17 @@ async function checkAndAwardBadges(
   const candidates: string[] = [];
 
   const conditions = [
-    { key: 'first_cleanup',    met: (activityCounts['ocean_cleanup_basic'] ?? 0) >= 1 },
-    { key: 'streak_3',         met: currentStreak >= 3 },
-    { key: 'streak_7',         met: currentStreak >= 7 },
-    { key: 'streak_30',        met: currentStreak >= 30 },
-    { key: 'level_5',          met: currentLevel >= 5 },
-    { key: 'level_10',         met: currentLevel >= 10 },
-    { key: 'community_voice',  met: (activityCounts['community_post'] ?? 0) >= 10 },
-    { key: 'eco_builder',      met: (activityCounts['eco_village_upgrade'] ?? 0) >= 5 },
-    { key: 'knowledge_seeker', met: (activityCounts['learn_video'] ?? 0) >= 10 }
-  ];
+  { key: 'first_cleanup',    met: (activityCounts['ocean_cleanup_basic'] ?? 0) >= 1 },
+  { key: 'streak_3',         met: currentStreak >= 3 },
+  { key: 'streak_7',         met: currentStreak >= 7 },
+  { key: 'streak_30',        met: currentStreak >= 30 },
+  { key: 'level_5',          met: currentLevel >= 5 },
+  { key: 'level_10',         met: currentLevel >= 10 },
+  { key: 'community_voice',  met: (activityCounts['community_post'] ?? 0) >= 10 },
+  { key: 'eco_builder',      met: (activityCounts['eco_village_upgrade'] ?? 0) >= 5 },
+  { key: 'knowledge_seeker', met: (activityCounts['learn_video'] ?? 0) >= 10 },
+  { key: 'quiz_master',      met: (activityCounts['quiz_completed'] ?? 0) >= 1 }
+];
 
   for (const { key, met } of conditions) {
     if (!alreadyEarned.has(key) && met) {
