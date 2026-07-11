@@ -18,7 +18,8 @@ export type ActivityType =
   | 'learn_video'
   | 'event_participation'
   | 'login_bonus'
-  | 'quiz_completed';
+  | 'quiz_completed'
+  | 'bingo_mission';
 
 export interface XPAwardResult {
   finalXP: number;
