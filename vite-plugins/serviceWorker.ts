@@ -1,7 +1,11 @@
 import { buildSync } from 'esbuild';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const SW_ENTRY = path.resolve(__dirname, '../public/service-worker.ts');
 const SW_FILENAME = 'service-worker.js';
