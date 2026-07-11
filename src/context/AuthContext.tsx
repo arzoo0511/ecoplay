@@ -148,6 +148,12 @@ export const AuthProvider: React.FC<{
           console.log("[AuthDebug] User found in session:", session.user.email);
           ensureUserProfile(session.user);
         }
+        // The preceding ternary already covers all three cases
+        // (session → toAppUser, guest-mode → guestUser, else → null).
+        // A redundant `setUser(isGuestMode() ? guestUser : null)` used to
+        // sit here and clobbered the session-derived user on every load,
+        // leaving authenticated users briefly signed-out until
+        // onAuthStateChange fired to recover. See issue #223.
         setUser(
           session?.user
             ? toAppUser(session.user)
@@ -155,7 +161,6 @@ export const AuthProvider: React.FC<{
               ? guestUser
               : null,
         );
-        setUser(isGuestMode() ? guestUser : null);
         setLoading(false);
       })
       .catch((err) => {
