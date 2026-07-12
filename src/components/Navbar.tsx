@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { BookOpen, Home, Leaf, LogOut, TreePine, Users, Waves, Activity } from 'lucide-react';
+import { BookOpen, Home, Leaf, LogOut, TreePine, Users, Waves, Activity, HelpCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useGame } from '../context/GameContext';
 import ThemeToggle from './ThemeToggle';
@@ -12,7 +12,8 @@ const navItems = [
   { path: '/eco-village', label: 'Eco Village', icon: TreePine },
   { path: '/learn', label: 'Learn', icon: BookOpen },
   { path: '/bingo', label: 'Bingo', icon: Leaf },
-  { path: '/community', label: 'Community', icon: Users }
+  { path: '/community', label: 'Community', icon: Users },
+  { path: '/quiz', label: 'Eco-Quiz', icon: HelpCircle },
 ];
 
 const linkBase =

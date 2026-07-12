@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useCallback, useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import SustainabilityQuiz from "../components/SustainabilityQuiz";
 import {
   BookOpen,
   CheckCircle2,
@@ -147,11 +148,10 @@ const ResourceCard: React.FC<{
         <button
           type="button"
           onClick={() => onOpen(content.id, content.url)}
-          className={`mt-auto w-full rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
-            isCompleted
-              ? "bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30"
-              : "bg-eco-accent text-white hover:bg-eco-accentAlt"
-          }`}
+          className={`mt-auto w-full rounded-xl px-4 py-2 text-sm font-medium transition-colors ${isCompleted
+              ? 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30'
+              : 'bg-eco-accent text-white hover:bg-eco-accentAlt'
+            }`}
         >
           {isCompleted ? "✓ Review Again" : "Start Learning →"}
         </button>
@@ -284,6 +284,7 @@ const Learn = () => {
   if (loading) {
     return (
       <div className="min-h-screen p-4 sm:p-6 lg:p-8 space-y-8 animate-pulse">
+
         {/* Hero Section */}
         <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8">
           <div className="h-10 w-72 rounded-full bg-white/10 mb-4"></div>
@@ -291,7 +292,10 @@ const Learn = () => {
 
           <div className="flex flex-wrap gap-3">
             {[1, 2, 3].map((item) => (
-              <div key={item} className="h-10 w-36 rounded-full bg-white/10" />
+              <div
+                key={item}
+                className="h-10 w-36 rounded-full bg-white/10"
+              />
             ))}
           </div>
         </div>
@@ -451,11 +455,10 @@ const Learn = () => {
                     setSelectedCategory(chip.key);
                     scrollToGrid();
                   }}
-                  className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                    selectedCategory === chip.key
-                      ? "bg-eco-accent text-white"
-                      : "border border-eco-border bg-eco-panel text-eco-muted hover:border-eco-accent"
-                  }`}
+                  className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${selectedCategory === chip.key
+                      ? 'bg-eco-accent text-white'
+                      : 'border border-eco-border bg-eco-panel text-eco-muted hover:border-eco-accent'
+                    }`}
                 >
                   {chip.emoji ? `${chip.emoji} ` : ""}
                   {chip.label}
@@ -477,11 +480,10 @@ const Learn = () => {
                     setSelectedType(chip.key);
                     scrollToGrid();
                   }}
-                  className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                    selectedType === chip.key
-                      ? "bg-eco-accent text-white"
-                      : "border border-eco-border bg-eco-panel text-eco-muted hover:border-eco-accent"
-                  }`}
+                  className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${selectedType === chip.key
+                      ? 'bg-eco-accent text-white'
+                      : 'border border-eco-border bg-eco-panel text-eco-muted hover:border-eco-accent'
+                    }`}
                 >
                   {chip.emoji ? `${chip.emoji} ` : ""}
                   {chip.label}
@@ -494,6 +496,20 @@ const Learn = () => {
 
       <div className="mb-4 text-sm text-eco-muted">
         Showing {filteredContent.length} of {learningContent.length} resources
+      </div>
+
+
+      {/* Sustainability Quiz */}
+      <div className="mb-8 rounded-3xl border border-eco-border bg-eco-surface p-6">
+        <h2 className="mb-2 text-2xl font-bold text-eco-text">
+          🧠 Sustainability Quiz
+        </h2>
+
+        <p className="mb-6 text-eco-muted">
+          Test your environmental knowledge and earn points by completing quizzes.
+        </p>
+
+        <SustainabilityQuiz />
       </div>
 
       <div id="resource-grid">
