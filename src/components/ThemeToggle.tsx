@@ -12,10 +12,6 @@ const ThemeToggle: React.FC<{ className?: string }> = ({ className = '' }) => {
       className={`relative inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors ${className}`}
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
-<<<<<<< HEAD
-      
-=======
->>>>>>> c10017a2a1fedcd76a6a94780a17c8054861a746
       {isDark ? (
         <svg className="w-5 h-5 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
           <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
