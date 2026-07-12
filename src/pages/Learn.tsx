@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import SustainabilityQuiz from "../components/SustainabilityQuiz";
 import {
   BookOpen,
   CheckCircle2,
@@ -135,11 +136,10 @@ const ResourceCard: React.FC<{
         <button
           type="button"
           onClick={() => onOpen(content.id, content.url)}
-          className={`mt-auto w-full rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
-            isCompleted
+          className={`mt-auto w-full rounded-xl px-4 py-2 text-sm font-medium transition-colors ${isCompleted
               ? 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30'
               : 'bg-eco-accent text-white hover:bg-eco-accentAlt'
-          }`}
+            }`}
         >
           {isCompleted ? '✓ Review Again' : 'Start Learning →'}
         </button>
@@ -266,86 +266,86 @@ const Learn = () => {
     return (
       <div className="min-h-screen p-4 sm:p-6 lg:p-8 space-y-8 animate-pulse">
 
-      {/* Hero Section */}
-      <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8">
-        <div className="h-10 w-72 rounded-full bg-white/10 mb-4"></div>
-        <div className="h-4 w-96 rounded-full bg-white/10 mb-6"></div>
+        {/* Hero Section */}
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8">
+          <div className="h-10 w-72 rounded-full bg-white/10 mb-4"></div>
+          <div className="h-4 w-96 rounded-full bg-white/10 mb-6"></div>
 
-        <div className="flex flex-wrap gap-3">
-          {[1, 2, 3].map((item) => (
+          <div className="flex flex-wrap gap-3">
+            {[1, 2, 3].map((item) => (
+              <div
+                key={item}
+                className="h-10 w-36 rounded-full bg-white/10"
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Search + Filters */}
+        <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+          <div className="h-12 rounded-xl bg-white/10 mb-4"></div>
+
+          <div className="space-y-4">
+            <div className="flex gap-2 overflow-hidden">
+              {[1, 2, 3, 4, 5].map((item) => (
+                <div
+                  key={item}
+                  className="h-10 w-28 rounded-full bg-white/10"
+                />
+              ))}
+            </div>
+
+            <div className="flex gap-2 overflow-hidden">
+              {[1, 2, 3].map((item) => (
+                <div
+                  key={item}
+                  className="h-10 w-24 rounded-full bg-white/10"
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Resource Cards */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((card) => (
             <div
-              key={item}
-              className="h-10 w-36 rounded-full bg-white/10"
-            />
+              key={card}
+              className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06]"
+            >
+              {/* shimmer */}
+              <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+              <div className="relative z-10">
+                <div className="h-44 bg-white/10"></div>
+
+                <div className="p-4 space-y-3">
+                  <div className="flex justify-between">
+                    <div className="h-4 w-28 rounded-full bg-white/10"></div>
+                    <div className="h-5 w-20 rounded-full bg-white/10"></div>
+                  </div>
+
+                  <div className="h-5 w-4/5 rounded-full bg-white/10"></div>
+
+                  <div className="space-y-2">
+                    <div className="h-3 rounded-full bg-white/10"></div>
+                    <div className="h-3 w-5/6 rounded-full bg-white/10"></div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="h-4 w-20 rounded-full bg-white/10"></div>
+                    <div className="h-4 w-16 rounded-full bg-white/10"></div>
+                  </div>
+
+                  <div className="h-10 rounded-xl bg-white/10"></div>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </div>
-
-      {/* Search + Filters */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-        <div className="h-12 rounded-xl bg-white/10 mb-4"></div>
-
-        <div className="space-y-4">
-          <div className="flex gap-2 overflow-hidden">
-            {[1,2,3,4,5].map((item) => (
-              <div
-                key={item}
-                className="h-10 w-28 rounded-full bg-white/10"
-              />
-            ))}
-          </div>
-
-          <div className="flex gap-2 overflow-hidden">
-            {[1,2,3].map((item) => (
-              <div
-                key={item}
-                className="h-10 w-24 rounded-full bg-white/10"
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Resource Cards */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {[1,2,3,4,5,6].map((card) => (
-          <div
-            key={card}
-            className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06]"
-          >
-            {/* shimmer */}
-            <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-            <div className="relative z-10">
-              <div className="h-44 bg-white/10"></div>
-
-              <div className="p-4 space-y-3">
-                <div className="flex justify-between">
-                  <div className="h-4 w-28 rounded-full bg-white/10"></div>
-                  <div className="h-5 w-20 rounded-full bg-white/10"></div>
-                </div>
-
-                <div className="h-5 w-4/5 rounded-full bg-white/10"></div>
-
-                <div className="space-y-2">
-                  <div className="h-3 rounded-full bg-white/10"></div>
-                  <div className="h-3 w-5/6 rounded-full bg-white/10"></div>
-                </div>
-
-                <div className="flex gap-3">
-                  <div className="h-4 w-20 rounded-full bg-white/10"></div>
-                  <div className="h-4 w-16 rounded-full bg-white/10"></div>
-                </div>
-
-                <div className="h-10 rounded-xl bg-white/10"></div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+    );
+  }
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen p-4 sm:p-6 lg:p-8">
       {/* Toast notification */}
@@ -426,11 +426,10 @@ const Learn = () => {
                     setSelectedCategory(chip.key);
                     scrollToGrid();
                   }}
-                  className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                    selectedCategory === chip.key
+                  className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${selectedCategory === chip.key
                       ? 'bg-eco-accent text-white'
                       : 'border border-eco-border bg-eco-panel text-eco-muted hover:border-eco-accent'
-                  }`}
+                    }`}
                 >
                   {chip.emoji ? `${chip.emoji} ` : ''}
                   {chip.label}
@@ -450,11 +449,10 @@ const Learn = () => {
                     setSelectedType(chip.key);
                     scrollToGrid();
                   }}
-                  className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                    selectedType === chip.key
+                  className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${selectedType === chip.key
                       ? 'bg-eco-accent text-white'
                       : 'border border-eco-border bg-eco-panel text-eco-muted hover:border-eco-accent'
-                  }`}
+                    }`}
                 >
                   {chip.emoji ? `${chip.emoji} ` : ''}
                   {chip.label}
@@ -467,6 +465,20 @@ const Learn = () => {
 
       <div className="mb-4 text-sm text-eco-muted">
         Showing {filteredContent.length} of {learningContent.length} resources
+      </div>
+
+
+      {/* Sustainability Quiz */}
+      <div className="mb-8 rounded-3xl border border-eco-border bg-eco-surface p-6">
+        <h2 className="mb-2 text-2xl font-bold text-eco-text">
+          🧠 Sustainability Quiz
+        </h2>
+
+        <p className="mb-6 text-eco-muted">
+          Test your environmental knowledge and earn points by completing quizzes.
+        </p>
+
+        <SustainabilityQuiz />
       </div>
 
       <div id="resource-grid">

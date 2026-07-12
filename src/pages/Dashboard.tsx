@@ -272,12 +272,20 @@ const Dashboard = () => {
 ];
 
   const { state, dispatch } = useGame();
-  const { user, ecoVillage, dailyChallenges, gameStats, notifications } = state;
+  const { user, ecoVillage, dailyChallenges, gameStats } = state;
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
 
   const [timeLeft, setTimeLeft] = useState('');
 
+const currentStreak = (state as any).streak?.streak_count ?? 0;
+const availableFreezes = (state as any).streak?.streak_freeze_count ?? 0;
+const notifications = (user as any)?.notifications ?? [];
+
+  const freezeRing = `${Math.max(
+    0,
+    Math.min(100, availableFreezes * 100)
+  )}%`;
 
   useEffect(() => {
     if (!state.lastChallengeRefresh) return;
@@ -411,13 +419,6 @@ const Dashboard = () => {
     const challenge = dailyChallenges.find(c => c.id === id);
     if (!challenge || challenge.completed) return;
 
-    const challengeKey = `daily-challenge-${challenge.id}`;
-    const alreadyCompleted = localStorage.getItem(challengeKey) === "true";
-
-    if (alreadyCompleted) {
-      return;
-    }
-
     const nextProgress = Math.min(100, (challenge.progress ?? 0) + delta);
     const justCompleted = nextProgress >= 100;
 
@@ -433,30 +434,9 @@ const Dashboard = () => {
     });
 
     if (justCompleted) {
-      localStorage.setItem(challengeKey, "true");
       dispatch?.({ type: 'ADD_POINTS', payload: challenge.points, activityType: 'daily_challenge' });
     }
   };
-
-  useEffect(() => {
-    dailyChallenges.forEach(challenge => {
-      const challengeKey = `daily-challenge-${challenge.id}`;
-      const completed = localStorage.getItem(challengeKey) === "true";
-
-      if (completed && !challenge.completed) {
-        dispatch?.({
-          type: 'UPDATE_CHALLENGE',
-          payload: {
-            id: challenge.id,
-            data: {
-              progress: 100,
-              completed: true
-            }
-          }
-        });
-      }
-    });
-  }, [dailyChallenges, authUser?.id, dispatch]);
 
   const stats = [
     {
