@@ -351,7 +351,7 @@ const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen relative overflow-x-hidden bg-white dark:bg-slate-950 transition-colors duration-300">
       {/* Global background */}
-      <div className="fixed inset-0 z-0 bg-gradient-to-b from-cyan-500 via-sky-700 to-blue-950 dark:from-sky-1000 dark:via-blue-950 dark:to-slate-950" />
+       <div className="fixed inset-0 z-0 bg-gradient-to-b from-emerald-50 via-teal-100 to-cyan-200 dark:from-[#0B1528] dark:via-[#07241A] dark:to-[#0B1528]" />
       <UnderwaterBackground />
 
       <LandingNav onNavigate={navigate} />
@@ -382,19 +382,19 @@ const LandingPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
         >
-          <div className="inline-flex items-center gap-2 bg-green-500/20 dark:bg-emerald-500/20 border border-green-400/30 dark:border-emerald-400/30 text-green-300 dark:text-emerald-300 text-sm font-semibold px-4 py-2 rounded-full mb-6">
-            <Globe className="h-4 w-4" />
-            <span>Gamified Environmental Education</span>
-          </div>
+          <div className="inline-flex items-center gap-2 bg-emerald-100/80 dark:bg-emerald-500/20 border border-emerald-200/60 dark:border-emerald-500/30 px-3 py-1 rounded-full backdrop-blur-sm">
+  <Globe className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
+  <span className="text-emerald-800 dark:text-emerald-300 text-xs font-semibold tracking-wide">Gamified Environmental Education</span>
+</div>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white dark:text-slate-50 leading-tight mb-6 max-w-4xl mx-auto">
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-slate-900 dark:text-white leading-tight mb-6">
             Save the Planet,{' '}
             <span className="bg-gradient-to-r from-green-400 to-blue-400 dark:from-emerald-300 dark:to-teal-300 bg-clip-text text-transparent">
               One Game at a Time
             </span>
           </h1>
 
-          <p className="text-xl text-blue-100 dark:text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
             EcoPlay makes sustainability fun, measurable, and community-driven. Play games, earn points,
             build your eco village, and make a real difference — all in one platform.
           </p>
@@ -434,7 +434,7 @@ const LandingPage: React.FC = () => {
           className="flex flex-wrap justify-center gap-6 text-sm"
         >
           {['🌊 Ocean Cleanup Game', '🌳 Eco Village Builder', '🌍 SDG Challenges', '👥 Active Community'].map((item) => (
-            <span key={item} className="text-blue-200 dark:text-slate-300 bg-white/5 dark:bg-white/5 px-3 py-1.5 rounded-full border border-white/10 dark:border-white/10">
+           <span key={item} className="text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-slate-800/40 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/30 px-3 py-1.5 rounded-full shadow-sm text-xs font-medium">
               {item}
             </span>
           ))}
