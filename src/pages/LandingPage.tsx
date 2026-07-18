@@ -442,11 +442,12 @@ const LandingPage: React.FC = () => {
 
         {/* Scroll indicator */}
         <motion.button
-          animate={{ y: [0, 8, 0] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          onClick={scrollToFeatures}
-          className="absolute bottom-10 text-white/50 dark:text-white/50 hover:text-white/80 dark:hover:text-white/80 transition-colors"
-        >
+      aria-label="Scroll down to features section"
+      animate={{ y: [0, 8, 0] }}
+      transition={{ repeat: Infinity, duration: 2 }}
+      onClick={scrollToFeatures}
+      className="absolute bottom-10 text-white/50 dark:text-white/50 hover:text-white/80 dark:hover:text-white/80"
+    >
           <ChevronDown className="h-8 w-8" />
         </motion.button>
       </motion.section>
