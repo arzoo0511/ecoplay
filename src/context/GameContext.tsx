@@ -129,7 +129,7 @@ interface DefaultAction {
   payload?: unknown;
 }
 
-type GameAction =
+export type GameAction =
   | AddPointsAction
   | CompleteDailyChallengeAction
   | SetStreakStateAction
@@ -178,9 +178,10 @@ const initialState: GameState = {
 
 type GameContextValue = {
   state: GameState;
-  dispatch: React.Dispatch<any>;
+  dispatch: React.Dispatch<GameAction>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const GameContext = React.createContext<GameContextValue | undefined>(undefined);
 
 // Simulation constants

@@ -278,14 +278,7 @@ const Dashboard = () => {
 
   const [timeLeft, setTimeLeft] = useState('');
 
-const currentStreak = (state as any).streak?.streak_count ?? 0;
-const availableFreezes = (state as any).streak?.streak_freeze_count ?? 0;
-const notifications = (user as any)?.notifications ?? [];
-
-  const freezeRing = `${Math.max(
-    0,
-    Math.min(100, availableFreezes * 100)
-  )}%`;
+  const notifications = (user as any)?.notifications ?? [];
 
   useEffect(() => {
     if (!state.lastChallengeRefresh) return;

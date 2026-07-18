@@ -44,27 +44,27 @@ export default function Leaderboard() {
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('weekly');
   const [sortMetric, setSortMetric] = useState<SortMetric>('points');
 
-  const currentUserEntry: LeaderboardUser | null = user ? {
-    id: user.id,
-    name: user.name || 'You',
-    avatarUrl: user.avatarUrl || null,
-    points: state.user.points || 0,
-    challenges: state.gameStats?.totalTrashCollected || 0,
-    badges: 5, // Mock data
-    contributions: 10, // Mock data
-    trend: 'up',
-    isCurrentUser: true
-  } : null;
-
   const sortedUsers = useMemo(() => {
-    let baseUsers = timeFrame === 'weekly' ? [...MOCK_USERS_WEEKLY] : [...MOCK_USERS_ALL_TIME];
+    const currentUserEntry: LeaderboardUser | null = user ? {
+      id: user.id,
+      name: user.name || 'You',
+      avatarUrl: user.avatarUrl || null,
+      points: state.user.points || 0,
+      challenges: state.gameStats?.totalTrashCollected || 0,
+      badges: 5, // Mock data
+      contributions: 10, // Mock data
+      trend: 'up',
+      isCurrentUser: true
+    } : null;
+
+    const baseUsers = timeFrame === 'weekly' ? [...MOCK_USERS_WEEKLY] : [...MOCK_USERS_ALL_TIME];
     
     if (currentUserEntry && !baseUsers.some(u => u.id === currentUserEntry.id)) {
       baseUsers.push(currentUserEntry);
     }
 
     return baseUsers.sort((a, b) => b[sortMetric] - a[sortMetric]);
-  }, [timeFrame, sortMetric, currentUserEntry]);
+  }, [timeFrame, sortMetric, user, state.user.points, state.gameStats?.totalTrashCollected]);
 
   const metrics: { id: SortMetric; label: string; icon: React.ReactNode }[] = [
     { id: 'points', label: 'Eco Points', icon: <Star className="w-4 h-4" /> },
