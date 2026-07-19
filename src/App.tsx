@@ -21,6 +21,7 @@ const LandingPage = React.lazy(() => import('./pages/LandingPage'));
 const Learn = React.lazy(() => import('./pages/Learn'));
 const OceanCleanupGame = React.lazy(() => import('./pages/OceanCleanupGame'));
 const Journey = React.lazy(() => import('./pages/Journey'));
+const Leaderboard = React.lazy(() => import('./pages/Leaderboard'));
 const QuizGame = React.lazy(() => import('./pages/Quizgame').then(m => ({ default: m.QuizGame })));
 /**
  * Protects routes that require authentication.
@@ -69,6 +70,7 @@ const AppRoutes = () => {
               <Route path="/journey" element={<Protected><Journey /></Protected>} />
               <Route path="/bingo" element={<Protected><Bingo /></Protected>} />
               <Route path="/community" element={<Protected><Community /></Protected>} />
+              <Route path="/leaderboard" element={<Protected><Leaderboard /></Protected>} />
               <Route path="/events" element={<Protected><Events /></Protected>} />
               <Route path="/quiz" element={<><Navbar /><QuizGame /></>} />
 
