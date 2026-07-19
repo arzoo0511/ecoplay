@@ -35,7 +35,10 @@ const Community = () => {
   const [replyModal, setReplyModal] = useState<{ open: boolean; postId?: string }>({ open: false });
   const [replyText, setReplyText] = useState('');
   
-  // Track which posts the user has liked in this session
+  // Track which posts the user has liked. Hydrated on mount from the
+  // authoritative server-side ledger (community_post_likes) so a refresh
+  // doesn't reset the heart icon and doesn't let a user re-like a post
+  // they've already liked (which used to inflate the counter — see #224).
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -43,6 +46,24 @@ const Community = () => {
       setLoading(false);
     }, 1500);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Load the user's liked-post ids once the page mounts. Empty result for
+  // guests / logged-out users is fine — the RPC is scoped to auth.uid().
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const ids = await dbFunctions.getLikedPostIds();
+        if (cancelled) return;
+        setLikedPosts(new Set(ids));
+      } catch (err) {
+        console.error('Failed to hydrate liked posts:', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const categories = [
