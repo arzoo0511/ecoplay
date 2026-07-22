@@ -1,15 +1,10 @@
 /**
- * @deprecated This file is preserved for reference only and is NO LONGER USED.
+ * Login / Register page — the app's authentication entry point (routed at /login).
  *
- * It implemented a client-side localStorage-based authentication system that
- * stored hashed passwords in the browser — a critical security vulnerability.
- *
- * The active authentication entry point is now:
- *   src/pages/Auth.tsx  →  backed by Supabase Auth (server-side, secure)
- *
- * This file should be deleted once the migration is confirmed stable.
+ * Backed by Supabase Auth via AuthContext (`login` / `register`); it performs no
+ * client-side credential storage. Toggles between sign-in and sign-up modes.
  */
- 
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, LogIn, Mail, User, UserPlus } from 'lucide-react';
