@@ -10,7 +10,7 @@ import useSyncStatus from './hooks/useSyncStatus';
 import MergePrompt from './components/status/MergePrompt';
 import OfflineBanner from './components/status/OfflineBanner';
 import Navbar from './components/Navbar';
-import Auth from './pages/Auth';
+import Login from './pages/Login';
 
 const Bingo = React.lazy(() => import('./pages/Bingo'));
 const Community = React.lazy(() => import('./pages/Community'));
@@ -59,7 +59,7 @@ const AppRoutes = () => {
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<Auth />} />
+              <Route path="/login" element={<Login />} />
 
               {/* Protected routes */}
               <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
