@@ -29,8 +29,8 @@ vi.mock("./pages/LandingPage", () => ({
   default: () => <div>Landing Page</div>,
 }));
 
-vi.mock("./pages/Auth", () => ({
-  default: () => <div>Auth Page</div>,
+vi.mock("./pages/Login", () => ({
+  default: () => <div>Login Page</div>,
 }));
 
 describe("App blank screen regression", () => {
