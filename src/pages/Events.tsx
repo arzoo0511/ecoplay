@@ -178,7 +178,7 @@ const Events = () => {
 
   const toggleJoin = (id: string) => {
     setEvents((prevEvents) =>
-      prevEvents.map((event) => {
+      (prevEvents ?? []).map((event) => {
         if (event.id !== id) return event;
         if (!event.isJoined && event.participants >= event.maxParticipants) return event;
         const newParticipants = event.isJoined ? event.participants - 1 : event.participants + 1;
