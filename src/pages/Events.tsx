@@ -189,7 +189,7 @@ const Events = () => {
 
   const toggleFavorite = (id: string) => {
     setEvents((prevEvents) =>
-      prevEvents.map((event) => (event.id === id ? { ...event, isFavorite: !event.isFavorite } : event))
+      (prevEvents ?? []).map((event) => (event.id === id ? { ...event, isFavorite: !event.isFavorite } : event))
     );
   };
 
