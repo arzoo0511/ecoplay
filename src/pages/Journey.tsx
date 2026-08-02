@@ -109,7 +109,7 @@ export default function Journey() {
               <Target className="text-emerald-500" /> AI-Generated Goals
             </h2>
             <div className="space-y-4">
-              {journeyStats?.weeklyGoals.map((goal, idx) => (
+              {journeyStats?.(weeklyGoals ?? []).map((goal, idx) => (
                 <motion.div
                   key={goal.id}
                   initial={{ opacity: 0, x: -20 }}
