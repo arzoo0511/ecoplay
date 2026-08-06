@@ -155,7 +155,6 @@ export const AuthProvider: React.FC<{
               ? guestUser
               : null,
         );
-        setUser(isGuestMode() ? guestUser : null);
         setLoading(false);
       })
       .catch((err) => {
