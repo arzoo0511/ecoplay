@@ -174,13 +174,19 @@ const EcoChatbot = () => {
       </motion.button>
 
       <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            className="fixed bottom-6 right-6 z-50 h-[450px] w-80 md:w-96 rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xl flex flex-col overflow-hidden"
-          >
+  {isOpen && (
+    <>
+      {/* Invisible overlay capturing clicks outside the widget */}
+      <div 
+        className="fixed inset-0 z-40 bg-transparent cursor-default" 
+        onClick={() => setIsOpen(false)} 
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.8, y: 20 }}
+        className="fixed bottom-6 right-6 z-50 h-[450px] w-80 md:w-96 rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xl flex flex-col overflow-hidden"
+      >
             <div className="border-b border-slate-200/70 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 p-4 transition-theme duration-300 dark:border-white/10">
               <div className="flex items-center space-x-3">
                 <div className="rounded-full bg-emerald-500 p-2">
@@ -217,8 +223,9 @@ const EcoChatbot = () => {
                     </p>
                   </div>
                 </motion.div>
+              
               ))}
-
+              
               {isTyping && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -245,7 +252,9 @@ const EcoChatbot = () => {
                     </div>
                   </div>
                 </motion.div>
+              
               )}
+            
 
               <div ref={messagesEndRef} />
             </div>
@@ -272,6 +281,7 @@ const EcoChatbot = () => {
               </div>
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
     </motion.div>
