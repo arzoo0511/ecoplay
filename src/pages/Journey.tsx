@@ -109,7 +109,7 @@ export default function Journey() {
               <Target className="text-emerald-500" /> AI-Generated Goals
             </h2>
             <div className="space-y-4">
-              {journeyStats?.weeklyGoals.map((goal, idx) => (
+              {journeyStats?.(weeklyGoals ?? []).map((goal, idx) => (
                 <motion.div
                   key={goal.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -138,7 +138,7 @@ export default function Journey() {
               <Calendar className="text-emerald-500" /> Journey Timeline
             </h2>
             <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-700 before:to-transparent">
-              {timeline.length > 0 ? timeline.map((activity, idx) => (
+              {timelineArray.isArray(timeline) ? timeline.map((activity, idx) => (
                 <div key={idx} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                   <div className="flex items-center justify-center w-10 h-10 rounded-full border border-gray-700 bg-gray-900 group-[.is-active]:bg-emerald-500 text-slate-500 group-[.is-active]:text-emerald-50 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
                     <Activity size={18} />
@@ -168,7 +168,7 @@ export default function Journey() {
               <Award className="text-emerald-500" /> Milestones
             </h2>
             <div className="grid grid-cols-2 gap-4">
-              {milestones.length > 0 ? milestones.map((ms, idx) => (
+              {milestonesArray.isArray(milestones) ? milestones.map((ms, idx) => (
                 <motion.div
                   key={idx}
                   whileHover={{ scale: 1.05 }}
@@ -194,7 +194,7 @@ export default function Journey() {
               <Globe className="text-emerald-500" /> Community Ranking
             </h2>
             <div className="space-y-4">
-              {globalRankings.length > 0 ? globalRankings.map((rank, idx) => (
+              {globalRankingsArray.isArray(globalRankings) ? globalRankings.map((rank, idx) => (
                 <div key={idx} className={`flex items-center justify-between p-3 rounded-lg ${rank.user_id === user?.id ? 'bg-emerald-500/20 border border-emerald-500/50' : 'bg-gray-900/50 border border-gray-700/50'}`}>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-800 text-white font-bold">
