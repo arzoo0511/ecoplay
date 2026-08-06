@@ -344,13 +344,27 @@ export const dbFunctions = {
       p_post_id: postId,
       p_increment: increment
     });
-    
+
     if (error) {
       console.error('Error updating post likes:', error);
       return false;
     }
-    
+
     return true;
+  },
+
+  // Return the set of post ids the current auth.uid() has liked. Used by
+  // Community.tsx to hydrate its optimistic likedPosts state from the
+  // authoritative source on mount, so a refresh doesn't reset the heart
+  // icon and doesn't let a user re-like a post they've already liked
+  // (which used to inflate the counter — see #224).
+  async getLikedPostIds(): Promise<string[]> {
+    const { data, error } = await supabase.rpc('get_user_liked_post_ids');
+    if (error) {
+      console.error('Error fetching liked post ids:', error);
+      return [];
+    }
+    return ((data ?? []) as { post_id: string }[]).map((row) => row.post_id);
   },
 
   async addCommunityPostReply(postId: string): Promise<boolean> {
