@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Leaf, MessageCircle, Send, X } from 'lucide-react';
-import { inputClass, modalPanel, primaryButton } from '../lib/ui';
+import { inputClass, primaryButton } from '../lib/ui';
 
 interface Message {
   id: string;

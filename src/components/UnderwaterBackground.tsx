@@ -111,9 +111,9 @@ const BubbleLayer: React.FC = () => {
 };
 
 
-const FishSchool: React.FC = () => {
-  const fishTypes = ["🐟", "🐠", "🐡"];
+const fishTypes = ["🐟", "🐠", "🐡"];
 
+const FishSchool: React.FC = () => {
   const fishes = useMemo(
     () =>
       Array.from({ length: 8 }, () => ({
