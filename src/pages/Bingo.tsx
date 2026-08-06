@@ -369,8 +369,22 @@ const Bingo = () => {
             ? total - Math.floor(total / 3) * 2
             : Math.floor(total / 3);
             
-        // Optimistic UI updates
-        dispatch({ type: 'ADD_POINTS', payload: taskPoints });
+        // Optimistic UI updates.
+        // Tag the dispatch with `bingo_mission` so award_xp_secure and the
+        // xp_ledger row are classified correctly. The `ADD_POINTS` handler
+        // in GameContext falls back to `'daily_challenge'` when no
+        // activityType is provided, which was polluting the daily-challenge
+        // counter with every SDG mission tick (issue #221).
+        dispatch({
+            type: 'ADD_POINTS',
+            payload: taskPoints,
+            activityType: 'bingo_mission',
+            metadata: {
+                goalIndex,
+                taskIndex,
+                sdgTitle: sdgGoals[goalIndex]?.title,
+            },
+        });
         setCompletionState(prev => {
             const prevGoal = prev[goalIndex] || { tasks: [false, false, false] as [boolean, boolean, boolean] };
             const newTasks = [...prevGoal.tasks] as [boolean, boolean, boolean];
