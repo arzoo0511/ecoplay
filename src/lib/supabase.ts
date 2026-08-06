@@ -639,14 +639,46 @@ export const dbFunctions = {
       // 7. Base XP award (5 XP per unit contribution, capped at 50 base XP)
       const baseXp = Math.min(amount * 5, 50);
 
-      // Award XP via secure RPC
-      const totalToAward = totalXpAwarded + baseXp;
+      // Award XP via secure RPC. Previously we computed `totalToAward` and
+      // returned it as `xpAwarded` without calling the RPC, so no XP row
+      // ever landed in xp_ledger and users saw a "+N XP" toast for XP
+      // that was never actually persisted (issue #220). Route the award
+      // through award_xp_secure — the same RPC every other client-side
+      // award goes through — so xp_ledger, user_stats, streaks, and badges
+      // all update consistently.
+      const clientComputedXp = totalXpAwarded + baseXp;
+      let awardedXp = clientComputedXp;
+      try {
+        const { data: rpcResult, error: awardErr } = await supabase.rpc(
+          'award_xp_secure',
+          {
+            p_activity_type: 'event_participation',
+            p_metadata: {
+              event_id: eventId,
+              contribution: amount,
+              cumulative_contribution: newContribution,
+              milestones_unlocked: milestonesUnlocked.map((m) => m.at),
+              goal_reached: goalReached,
+              client_computed_xp: clientComputedXp,
+            },
+          },
+        );
+        if (awardErr) throw awardErr;
+        if (rpcResult && typeof (rpcResult as { final_xp?: number }).final_xp === 'number') {
+          awardedXp = (rpcResult as { final_xp: number }).final_xp;
+        }
+      } catch (awardErr) {
+        // Don't roll back the contribution — that row is already committed
+        // and rolling it back could cause the user to lose progress. Log
+        // and surface a partial-success signal to the caller.
+        console.error('[EcoPlay] award_xp_secure failed for event contribution:', awardErr);
+      }
 
       return {
         success: true,
         contribution: newContribution,
         communityProgress: communityTotal,
-        xpAwarded: totalToAward,
+        xpAwarded: awardedXp,
         milestonesUnlocked,
         goalReached,
       };
