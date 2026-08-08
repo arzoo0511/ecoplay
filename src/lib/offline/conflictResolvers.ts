@@ -2,7 +2,7 @@ export function resolveVillageState(local: unknown, remote: unknown): unknown {
   const localState = local as { updatedAt?: number } | null;
   const remoteState = remote as { updatedAt?: number } | null;
 
-  if (remoteState == null) {
+  if (remoteState === null) {
     return localState;
   }
 
