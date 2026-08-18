@@ -345,11 +345,11 @@ In Vercel, open your project and go to **Settings -> Environment Variables**. Ad
 
 <!-- TOP_CONTRIBUTORS_START -->
 
-🥇 [arzoo0511](https://github.com/arzoo0511) - 77 contributions
-🥈 [github-actions[bot]](https://github.com/apps/github-actions) - 48 contributions
-🥉 [Swathi-Chippa](https://github.com/Swathi-Chippa) - 16 contributions
+🥇 [arzoo0511](https://github.com/arzoo0511) - 83 contributions
+🥈 [github-actions[bot]](https://github.com/apps/github-actions) - 49 contributions
+🥉 [vedant7007](https://github.com/vedant7007) - 24 contributions
 
-_Last Updated: 8/17/2026_
+_Last Updated: 8/18/2026_
 
 <!-- TOP_CONTRIBUTORS_END -->
 
